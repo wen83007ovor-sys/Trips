@@ -27,9 +27,9 @@
             min-height: 100vh;
         }
 
-        /* 預覽模式背景 */
         body.preview-mode { background-color: #333 !important; }
 
+        /* PDF 分頁優化：防止區塊被切斷 */
         .container {
             width: 95%;
             max-width: 210mm;
@@ -39,6 +39,11 @@
             margin: 10px auto 140px auto; 
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             position: relative;
+        }
+
+        .day-group, .cost-table, .form-section {
+            page-break-inside: avoid !important; /* 強制 PDF 避開在區塊內分頁 */
+            break-inside: avoid !important;
         }
 
         .company-header input {
@@ -70,63 +75,28 @@
         .note-area { padding: 10px; background: #fffbe6; border-top: 1px solid #eee; }
         .note-label { font-weight: bold; color: #856404; font-size: 10pt; display: block; margin-bottom: 5px; }
 
-        /* --- 工具列修正重點 --- */
+        /* 工具列 */
         .toolbar-fixed {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            background: #ffffff;
-            z-index: 10000; /* 提高層級 */
-            box-shadow: 0 -3px 15px rgba(0,0,0,0.3);
+            position: fixed; bottom: 0; left: 0; width: 100%; background: #ffffff;
+            z-index: 10000; box-shadow: 0 -3px 15px rgba(0,0,0,0.3);
             padding: 12px 10px calc(15px + env(safe-area-inset-bottom)); 
-            display: flex;
-            justify-content: center;
-            gap: 8px;
+            display: flex; justify-content: center; gap: 8px;
         }
-
         .btn-group { display: flex; width: 100%; max-width: 600px; gap: 8px; }
-
-        .btn {
-            flex: 1;
-            padding: 12px 2px;
-            border-radius: 8px;
-            border: none;
-            font-weight: bold;
-            color: #fff;
-            font-size: 13px;
-            text-align: center;
-            cursor: pointer;
-        }
-
+        .btn { flex: 1; padding: 12px 2px; border-radius: 8px; border: none; font-weight: bold; color: #fff; font-size: 13px; text-align: center; cursor: pointer; }
         .btn-edit-save { background: #e67e22; }
         .btn-edit-load { background: #8e44ad; }
         .btn-edit-gen { background: #27ae60; }
         .btn-edit-preview { background: #34495e; }
-        
         .btn-pre-back { background: #7f8c8d; }
         .btn-pre-pdf { background: #c0392b; }
         .btn-pre-word { background: #2980b9; }
 
         .hidden { display: none !important; }
 
-        /* 核心修正：預覽模式下不要隱藏帶有 no-print 的工具列 */
-        body.preview-mode .no-print:not(.toolbar-fixed) { 
-            display: none !important; 
-        }
-
-        /* 只有在真正的列印時才完全隱藏工具列 */
-        @media print {
-            .no-print { display: none !important; }
-            .toolbar-fixed { display: none !important; }
-        }
-
-        /* 預覽模式內的輸入框樣式 */
-        body.preview-mode input, body.preview-mode textarea { 
-            border: none !important; 
-            background: transparent !important; 
-            pointer-events: none; 
-        }
+        body.preview-mode .no-print:not(.toolbar-fixed) { display: none !important; }
+        @media print { .no-print, .toolbar-fixed { display: none !important; } }
+        body.preview-mode input, body.preview-mode textarea { border: none !important; background: transparent !important; pointer-events: none; }
     </style>
 </head>
 <body>
@@ -155,7 +125,6 @@
         </div>
     </div>
 
-    <!-- 加入 toolbar-fixed 確保不被隱藏規則誤殺 -->
     <div class="toolbar-fixed no-print">
         <div id="group-edit" class="btn-group">
             <button class="btn btn-edit-save" onclick="saveData()">💾存檔</button>
@@ -163,7 +132,6 @@
             <button class="btn btn-edit-gen" onclick="buildItinerary()">1.生成</button>
             <button class="btn btn-edit-preview" onclick="toggleMode(true)">2.預覽</button>
         </div>
-
         <div id="group-preview" class="btn-group hidden">
             <button class="btn btn-pre-back" onclick="toggleMode(false)">⬅返回</button>
             <button class="btn btn-pre-pdf" onclick="downloadPDF()">📥PDF</button>
@@ -172,13 +140,8 @@
     </div>
 
     <script>
-        // 文字框自動縮放
-        function autoHeight(el) { 
-            el.style.height = 'auto'; 
-            el.style.height = el.scrollHeight + 'px'; 
-        }
+        function autoHeight(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
         
-        // 生成行程
         function buildItinerary(existingData = null) {
             const days = existingData ? existingData.daysCount : document.getElementById('ipt_days').value;
             const start = document.getElementById('ipt_date').value;
@@ -228,11 +191,9 @@
             list.appendChild(div.firstElementChild);
         }
 
-        // 切換模式
         function toggleMode(isPreview) {
             const editGroup = document.getElementById('group-edit');
             const previewGroup = document.getElementById('group-preview');
-
             if (isPreview) {
                 document.body.classList.add('preview-mode');
                 editGroup.classList.add('hidden');
@@ -246,7 +207,6 @@
             window.scrollTo(0, 0);
         }
 
-        // 存檔與讀檔
         function saveData() {
             const days = [];
             document.querySelectorAll('.day-group').forEach(group => {
@@ -284,19 +244,22 @@
             alert("📂 讀檔完成");
         }
 
-        // 下載功能
+        // --- 修正 PDF 下載邏輯 ---
         function downloadPDF() {
             const element = document.getElementById('pdfArea');
             const opt = {
-                margin: 5,
+                margin: 8,
                 filename: '行程表.pdf',
                 image: { type: 'jpeg', quality: 0.98 },
                 html2canvas: { scale: 2, useCORS: true, windowWidth: 794 },
+                // 加入 pagebreak 設定，強制避開在區塊內分頁
+                pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
             html2pdf().set(opt).from(element).save();
         }
 
+        // --- 修正 Word 下載相容性 ---
         function downloadWord() {
             const area = document.getElementById('pdfArea').cloneNode(true);
             area.querySelectorAll('.no-print').forEach(n => n.remove());
@@ -305,7 +268,25 @@
                 span.innerHTML = el.value.replace(/\n/g, '<br>');
                 el.replaceWith(span);
             });
-            const html = `<html><head><meta charset="utf-8"></head><body>${area.innerHTML}</body></html>`;
+
+            // 構建帶樣式的 HTML 樣板，確保在手機版 Word 不會變成一片空白
+            const html = `
+                <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+                <head>
+                    <meta charset="utf-8">
+                    <style>
+                        body { font-family: "Microsoft JhengHei", sans-serif; }
+                        table { border-collapse: collapse; width: 100%; }
+                        th, td { border: 1px solid black; padding: 5px; }
+                        .day-header { background-color: #2c3e50; color: white; padding: 10px; font-weight: bold; }
+                        .note-area { background-color: #fffbe6; padding: 10px; border: 1px solid #ddd; }
+                    </style>
+                </head>
+                <body>
+                    ${area.innerHTML}
+                </body>
+                </html>`;
+            
             const converted = htmlDocx.asBlob(html);
             saveAs(converted, '行程表.docx');
         }
