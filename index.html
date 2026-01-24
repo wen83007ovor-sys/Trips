@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>旅遊行程</title>
+    <title>旅遊行程產生器</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -28,7 +28,6 @@
 
         body.preview-mode { background-color: #333 !important; }
 
-        /* 容器設計 */
         .container {
             width: 95%;
             max-width: 210mm;
@@ -40,7 +39,14 @@
             position: relative;
         }
 
-        /* 標題與基本資料 */
+        /* PDF 下載時的強制置中樣式 */
+        .container.pdf-calculating {
+            width: 794px !important;
+            max-width: none !important;
+            margin: 0 !important;
+            padding: 40px !important;
+        }
+
         .company-header input {
             font-size: 20pt; font-weight: bold; text-align: center; border: none;
             border-bottom: 2px solid #eee; width: 100%; color: var(--primary-color);
@@ -54,12 +60,10 @@
         label { font-size: 10.5pt; font-weight: bold; min-width: 80px; color: #333; }
         input, textarea { padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 11pt; width: 100%; background: #fafafa; }
         
-        /* 費用表格 */
-        .cost-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        .cost-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; background: #fff; }
         .cost-table th, .cost-table td { border: 1px solid #000; padding: 8px; font-size: 10.5pt; }
         .cost-table th { background-color: #f8f9fa; width: 85px; text-align: center; }
 
-        /* 行程區塊 */
         .day-group { margin-bottom: 20px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; background: #fff; page-break-inside: avoid; }
         .day-header { background: var(--primary-color); color: #fff; padding: 12px; font-weight: bold; font-size: 14px; }
         .items-list { padding: 8px; }
@@ -117,7 +121,7 @@
             <tr><th>備註事項</th><td><input type="text" id="ipt_c5" placeholder="注意事項"></td></tr>
         </table>
         <div id="itineraryContainer">
-            <p style="text-align: center; color: #999; padding: 30px;">請點擊下方「生成」按鈕</p>
+            <p style="text-align: center; color: #999; padding: 30px;">請點擊「生成」按鈕</p>
         </div>
     </div>
 
@@ -143,14 +147,17 @@
             const start = document.getElementById('ipt_date').value;
             const container = document.getElementById('itineraryContainer');
             if (!days || days <= 0) return alert("請輸入天數");
+            
             container.innerHTML = '';
             let d = start ? new Date(start) : null;
             for(let i=1; i<=days; i++) {
                 let dateStr = d ? `${d.getMonth()+1}/${d.getDate()}` : `Day ${i}`;
                 if(d) d.setDate(d.getDate()+1);
+                
                 let itemsHtml = (existingData && existingData.days[i-1]) 
                     ? existingData.days[i-1].items.map(item => createItemRow(item.time, item.content)).join('')
                     : createItemRow("08:00", "");
+                
                 const noteVal = (existingData && existingData.days[i-1]) ? existingData.days[i-1].note : "";
                 const group = document.createElement('div');
                 group.className = 'day-group';
@@ -167,7 +174,7 @@
         function createItemRow(time, content) {
             return `<div class="itinerary-item">
                 <input type="text" class="ipt-time" value="${time}">
-                <textarea placeholder="內容..." rows="1" oninput="autoHeight(this)">${content}</textarea>
+                <textarea placeholder="行程內容..." rows="1" oninput="autoHeight(this)">${content}</textarea>
                 <button class="no-print" onclick="this.parentElement.remove()" style="border:none; background:none; color:red; font-size:20px; padding:0 5px;">×</button>
             </div>`;
         }
@@ -185,6 +192,7 @@
             document.getElementById('group-preview').classList.toggle('hidden', !isPreview);
             document.querySelectorAll('input, textarea').forEach(el => el.readOnly = isPreview);
             window.scrollTo(0, 0);
+            if(isPreview) { document.querySelectorAll('textarea').forEach(t => autoHeight(t)); }
         }
 
         function saveData() {
@@ -206,42 +214,31 @@
                 costs: [1,2,3,4,5].map(i => document.getElementById('ipt_c'+i).value),
                 days: days
             };
-            localStorage.setItem('trip_final_save', JSON.stringify(data));
+            localStorage.setItem('trip_save_v10', JSON.stringify(data));
             alert("✅ 存檔成功");
         }
 
         function loadData() {
-            const data = JSON.parse(localStorage.getItem('trip_final_save'));
-            if(!data) return alert("無紀錄");
+            const data = JSON.parse(localStorage.getItem('trip_save_v10'));
+            if(!data) return alert("無存檔");
             document.getElementById('ipt_agency').value = data.agency || "";
-            document.getElementById('ipt_company').value = data.company;
-            document.getElementById('ipt_contact').value = data.contact;
-            document.getElementById('ipt_phone').value = data.phone;
-            document.getElementById('ipt_date').value = data.date;
-            document.getElementById('ipt_days').value = data.daysCount;
-            data.costs.forEach((v, i) => document.getElementById('ipt_c'+(i+1)).value = v);
+            document.getElementById('ipt_company').value = data.company || "";
+            document.getElementById('ipt_contact').value = data.contact || "";
+            document.getElementById('ipt_phone').value = data.phone || "";
+            document.getElementById('ipt_date').value = data.date || "";
+            document.getElementById('ipt_days').value = data.daysCount || 3;
+            data.costs.forEach((v, i) => { if(document.getElementById('ipt_c'+(i+1))) document.getElementById('ipt_c'+(i+1)).value = v; });
             buildItinerary(data);
-            alert("📂 讀檔成功");
+            alert("📂 讀檔完成");
         }
 
-        // --- 修正 PDF：使用隱藏克隆法確保 100% 置中且不偏移 ---
+        // --- PDF：回歸穩定渲染法 ---
         function downloadPDF() {
             const element = document.getElementById('pdfArea');
-            // 建立一個臨時隱藏容器，寬度固定為 A4 寬 (794px)
-            const wrapper = document.createElement('div');
-            wrapper.style.position = 'absolute';
-            wrapper.style.left = '-9999px';
-            wrapper.style.top = '0';
-            wrapper.style.width = '794px';
-            wrapper.style.background = '#fff';
             
-            const clone = element.cloneNode(true);
-            clone.style.width = '794px';
-            clone.style.margin = '0';
-            clone.style.padding = '40px'; // 增加邊距美化
-            wrapper.appendChild(clone);
-            document.body.appendChild(wrapper);
-
+            // 步驟1：暫時切換成固定寬度模式，防止手機版偏位
+            element.classList.add('pdf-calculating');
+            
             const opt = {
                 margin: 0,
                 filename: '行程表.pdf',
@@ -249,26 +246,29 @@
                 html2canvas: { 
                     scale: 2, 
                     useCORS: true, 
-                    width: 794,
-                    scrollY: 0, 
-                    scrollX: 0,
-                    x: 0, 
-                    y: 0 
+                    logging: false,
+                    windowWidth: 794, // 模擬 A4 寬度
+                    scrollY: -window.scrollY // 修正位移
                 },
                 jsPDF: { unit: 'pt', format: 'a4', orientation: 'portrait' }
             };
-            
-            html2pdf().set(opt).from(wrapper).save().then(() => {
-                document.body.removeChild(wrapper);
+
+            // 步驟2：執行下載
+            html2pdf().set(opt).from(element).save().then(() => {
+                // 步驟3：下載完恢復響應式佈局
+                element.classList.remove('pdf-calculating');
+            }).catch(err => {
+                element.classList.remove('pdf-calculating');
+                alert("PDF 產出失敗，請重試");
             });
         }
 
-        // --- 修正 Word：改用 .doc 格式 (MIME HTML) 確保手機 Word App 能開啟 ---
+        // --- Word：保留相容性最高的 .doc 格式 ---
         function downloadWord() {
             const area = document.getElementById('pdfArea').cloneNode(true);
             area.querySelectorAll('.no-print').forEach(n => n.remove());
 
-            // 將所有表單轉為 Table 結構 (手機 Word App 只認 Table)
+            // 將所有 Grid/Flex 轉換為 Table 以相容手機 Word
             const formSect = area.querySelector('.form-section');
             if (formSect) {
                 const gps = formSect.querySelectorAll('.form-group');
@@ -279,7 +279,7 @@
                         if(gps[i+j]) {
                             const l = gps[i+j].querySelector('label').innerText;
                             const v = gps[i+j].querySelector('input').value;
-                            tb += `<td style="width:15%; font-weight:bold;">${l}</td><td style="width:35%;">${v}</td>`;
+                            tb += `<td style="width:18%; font-weight:bold;">${l}</td><td style="width:32%;">${v}</td>`;
                         }
                     }
                     tb += '</tr>';
@@ -287,7 +287,6 @@
                 formSect.outerHTML = tb + '</table>';
             }
 
-            // 處理行程區塊
             area.querySelectorAll('.day-group').forEach(group => {
                 const head = group.querySelector('.day-header').innerText;
                 const items = group.querySelectorAll('.itinerary-item');
@@ -297,7 +296,7 @@
                 items.forEach(it => {
                     const t = it.querySelector('.ipt-time').value;
                     const c = it.querySelector('textarea').value.replace(/\n/g, '<br>');
-                    itb += `<tr><td style="width:80px; border:1px solid #ccc; padding:8px; font-weight:bold;">${t}</td><td style="border:1px solid #ccc; padding:8px;">${c}</td></tr>`;
+                    itb += `<tr><td style="width:85px; border:1px solid #ccc; padding:8px; font-weight:bold;">${t}</td><td style="border:1px solid #ccc; padding:8px;">${c}</td></tr>`;
                 });
                 itb += `<tr><td colspan="2" style="background-color:#fffbe6; padding:10px; border:1px solid #ccc;"><b>備註：</b><br>${note.replace(/\n/g, '<br>')}</td></tr></table>`;
                 group.outerHTML = itb;
@@ -311,7 +310,7 @@
                 <head><meta charset='utf-8'><style>body{font-family:"Microsoft JhengHei";}</style></head><body>`;
             const footer = `</body></html>`;
             const blob = new Blob([header + area.innerHTML + footer], { type: 'application/msword' });
-            saveAs(blob, '行程表.doc'); // 改為 .doc 格式，手機 Word 相容性最好
+            saveAs(blob, '行程表.doc');
         }
     </script>
 </body>
