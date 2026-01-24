@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>旅遊行程產生器</title>
+    <title>旅遊行程</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/evidenceprime/html-docx-js@master/dist/html-docx.js"></script>
@@ -111,14 +111,14 @@
             <div class="form-group"><label>聯絡窗口：</label><input type="text" id="ipt_contact"></div>
             <div class="form-group"><label>聯絡電話：</label><input type="text" id="ipt_phone"></div>
             <div class="form-group"><label>出發日期：</label><input type="date" id="ipt_date"></div>
-            <div class="form-group"><label>行程天數：</label><input type="number" id="ipt_days" value="2"></div>
+            <div class="form-group"><label>行程天數：</label><input type="number" id="ipt_days" value=""></div>
         </div>
         <table class="cost-table">
-            <tr><th>個人團費</th><td><input type="text" id="ipt_c1"></td></tr>
-            <tr><th>餐食交通</th><td><input type="text" id="ipt_c2"></td></tr>
-            <tr><th>住宿安排</th><td><input type="text" id="ipt_c3"></td></tr>
-            <tr><th>費用包含</th><td><input type="text" id="ipt_c4"></td></tr>
-            <tr><th>備註事項</th><td><input type="text" id="ipt_c5"></td></tr>
+            <tr><th>個人團費</th><td><input type="text" id="ipt_c1" placeholder="$ /人"></td></tr>
+            <tr><th>餐食交通</th><td><input type="text" id="ipt_c2" placeholder="說明"></td></tr>
+            <tr><th>住宿安排</th><td><input type="text" id="ipt_c3" placeholder="飯店房型"></td></tr>
+            <tr><th>費用包含</th><td><input type="text" id="ipt_c4" placeholder="門票保險等"></td></tr>
+            <tr><th>備註事項</th><td><input type="text" id="ipt_c5" placeholder="注意事項"></td></tr>
         </table>
         <div id="itineraryContainer">
             <p style="text-align: center; color: #999; padding: 30px;">請點擊「生成」按鈕</p>
