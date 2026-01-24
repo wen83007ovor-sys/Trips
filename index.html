@@ -3,19 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>旅遊行程確認單</title>
+    <title>旅遊行程</title>
     
-    <!-- 必要的外部套件 -->
+    <!-- 套件載入 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-    <!-- 使用穩定版的 html-docx -->
     <script src="https://cdn.jsdelivr.net/gh/evidenceprime/html-docx-js@master/dist/html-docx.js"></script>
-    <!-- 直接轉 PDF 的套件 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <style>
-        /* --- 全域美化設定 --- */
         * { box-sizing: border-box; }
-
         :root {
             --primary-color: #2c3e50;
             --accent-color: #2980b9;
@@ -27,87 +23,71 @@
         }
 
         body {
-            font-family: "Microsoft JhengHei", "Heiti TC", "PMingLiU", serif;
+            font-family: "Microsoft JhengHei", sans-serif;
             background-color: var(--bg-color);
-            margin: 0;
-            padding: 20px;
-            color: #000;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            transition: background-color 0.3s ease;
+            margin: 0; padding: 20px;
+            display: flex; flex-direction: column; align-items: center;
         }
 
-        /* --- A4 紙張模擬 --- */
+        /* A4 紙張容器 */
         .container {
-            width: 100%;
-            max-width: 210mm;
+            width: 210mm; /* 強制寬度防止 PDF 跑版 */
             background: var(--paper-color);
-            padding: 40px; 
+            padding: 30mm 20mm; /* 標準列印邊距 */
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             min-height: 297mm;
             margin-bottom: 20px;
             border: 1px solid #ddd;
-            position: relative;
         }
 
         body.preview-mode { background-color: var(--preview-bg); padding-top: 50px; }
         body.preview-mode .container { box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: none; }
 
-        /* 公司抬頭 */
         .company-header { text-align: center; margin-bottom: 20px; }
         .company-header input {
             font-size: 20pt; font-weight: bold; text-align: center; border: none;
-            border-bottom: 2px solid #eee; margin-bottom: 5px; color: var(--primary-color);
-            padding: 10px; width: 100%; background: transparent;
+            border-bottom: 2px solid #eee; width: 100%; color: var(--primary-color);
         }
 
-        h1 { text-align: center; border-bottom: 3px double #000; padding-bottom: 15px; margin-top: 0; margin-bottom: 30px; font-size: 24pt; letter-spacing: 2px; }
-        h2 { font-size: 13pt; color: var(--primary-color); margin-top: 25px; border-bottom: 1px solid #ccc; padding-bottom: 5px; margin-bottom: 15px; font-weight: bold; }
+        h1 { text-align: center; border-bottom: 3px double #000; padding-bottom: 15px; margin-bottom: 30px; font-size: 24pt; }
 
-        /* --- 兩欄式表單區域 (恢復清晰版面) --- */
-        .form-section { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+        /* 基本資料區 */
+        .form-section { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
         .form-group { display: flex; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 5px; }
-        label { font-size: 10pt; font-weight: bold; min-width: 120px; color: #444; white-space: nowrap; }
+        label { font-size: 10pt; font-weight: bold; min-width: 110px; color: #444; }
 
-        input, textarea { padding: 8px; border: 1px solid #eee; border-radius: 2px; font-size: 11pt; font-family: inherit; width: 100%; background: #fafafa; }
-        input:focus, textarea:focus { border-color: var(--accent-color); outline: none; background: #fff; }
+        input, textarea { padding: 6px; border: 1px solid #eee; border-radius: 2px; font-size: 11pt; font-family: inherit; width: 100%; background: #fafafa; }
         textarea { resize: none; overflow: hidden; }
 
-        /* 預覽與輸出時的文字狀態 */
         body.preview-mode input, body.preview-mode textarea { border: none !important; background: transparent !important; padding: 2px !important; color: #000; }
 
         /* 費用表格 */
-        .cost-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-        .cost-table th, .cost-table td { border: 1px solid #000; padding: 10px; text-align: left; vertical-align: top; }
-        .cost-table th { background-color: #f8f9fa; width: 130px; font-weight: bold; }
+        .cost-table { width: 100%; border-collapse: collapse; margin-bottom: 25px; }
+        .cost-table th, .cost-table td { border: 1px solid #000; padding: 10px; text-align: left; }
+        .cost-table th { background-color: #f8f9fa; width: 130px; }
 
-        /* --- 每日行程規劃 (恢復清晰版面) --- */
-        .day-container { margin-bottom: 25px; page-break-inside: avoid; }
-        .day-header { display: flex; justify-content: space-between; align-items: center; background: var(--primary-color); color: #fff; padding: 8px 15px; border-radius: 4px 4px 0 0; }
+        /* 每日行程結構 */
+        .day-group { margin-bottom: 30px; page-break-inside: avoid; border: 1px solid #eee; border-radius: 4px; overflow: hidden; }
+        .day-header { background: var(--primary-color); color: #fff; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; }
         .day-title { font-size: 12pt; font-weight: bold; }
-
-        .items-list { background-color: var(--day-bg-color); padding: 15px; border-radius: 0 0 4px 4px; border: 1px solid #eee; border-top: none; }
         
-        .itinerary-item { display: grid; grid-template-columns: 80px 1fr auto; gap: 15px; margin-bottom: 8px; align-items: flex-start; padding-bottom: 8px; border-bottom: 1px dotted #ccc; }
+        .items-list { background-color: var(--day-bg-color); padding: 15px; }
+        .itinerary-item { display: grid; grid-template-columns: 80px 1fr auto; gap: 10px; margin-bottom: 10px; border-bottom: 1px dotted #ccc; padding-bottom: 5px; }
         .itinerary-item:last-child { border-bottom: none; }
         
-        .ipt-time { text-align: center; font-weight: bold; background: transparent; border: none; }
-        .ipt-content { background: transparent; border: none; }
+        .ipt-time { text-align: center; font-weight: bold; }
+        .note-area { margin-top: 10px; padding-top: 10px; border-top: 1px solid #ccc; display: flex; }
+        .note-label { font-weight: bold; width: 60px; color: #555; }
 
-        /* --- 操作按鈕工具列 --- */
-        .toolbar-container {
-            position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(255,255,255,0.95); border-top: 1px solid #ccc;
-            padding: 15px; display: flex; justify-content: center; gap: 10px; z-index: 9999; box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+        /* 工具列 */
+        .toolbar {
+            position: fixed; bottom: 0; width: 100%; background: #fff; border-top: 1px solid #ccc;
+            padding: 15px; display: flex; justify-content: center; gap: 10px; z-index: 1000;
         }
-        .btn { padding: 12px 20px; border-radius: 4px; border: none; font-weight: bold; cursor: pointer; color: #fff; background: var(--accent-color); transition: 0.2s; }
-        .btn:hover { opacity: 0.9; transform: translateY(-1px); }
-        .btn-save { background: var(--save-color); }
+        .btn { padding: 10px 20px; border-radius: 4px; border: none; font-weight: bold; cursor: pointer; color: #fff; background: var(--accent-color); }
         .btn-gen { background: #27ae60; }
         .btn-preview { background: #34495e; }
-        .btn-danger { background: #c0392b; font-size: 0.8rem; padding: 5px 10px; }
-        .btn-sm { background-color: rgba(255,255,255,0.2); border: 1px solid #fff; padding: 5px 10px; font-size: 0.9rem; }
-        
+        .btn-save { background: var(--save-color); }
         .hidden { display: none !important; }
 
         @media print { .no-print { display: none !important; } }
@@ -115,229 +95,166 @@
 </head>
 <body>
 
-    <div class="container" id="exportArea">
+    <div class="container" id="pdfArea">
         <div class="company-header">
-            <input type="text" id="ipt_agencyName" placeholder="請輸入旅行社名稱">
+            <input type="text" id="ipt_agency" placeholder="請輸入旅行社名稱">
         </div>
 
-        <h1>旅遊行程確認單</h1>
+        <h1>旅遊行程</h1>
 
-        <h2>客戶與行程資訊</h2>
         <div class="form-section">
-            <div class="form-group"><label>客戶 / 團體名稱：</label><input type="text" id="ipt_company" placeholder="客戶名稱"></div>
-            <div class="form-group"><label>聯絡窗口：</label><input type="text" id="ipt_contact" placeholder="姓名"></div>
-            <div class="form-group"><label>聯絡電話：</label><input type="text" id="ipt_phone" placeholder="電話"></div>
-            <div class="form-group"><label>出發日期：</label><input type="date" id="ipt_startDate"></div>
-            <div class="form-group"><label>行程天數：</label><input type="number" id="ipt_totalDays" value="" style="width: 60px;"> <span class="no-print" style="margin-left:5px">天</span></div>
+            <div class="form-group"><label>客戶名稱：</label><input type="text" id="ipt_company"></div>
+            <div class="form-group"><label>聯絡窗口：</label><input type="text" id="ipt_contact"></div>
+            <div class="form-group"><label>聯絡電話：</label><input type="text" id="ipt_phone"></div>
+            <div class="form-group"><label>出發日期：</label><input type="date" id="ipt_date"></div>
+            <div class="form-group"><label>行程天數：</label><input type="number" id="ipt_days" value="" style="width: 50px;"> <span class="no-print">天</span></div>
         </div>
 
-        <h2>報價與費用明細</h2>
         <table class="cost-table">
-            <tr><th>個人團費</th><td><input type="text" id="ipt_cost1" placeholder="$ /人"></td></tr>
-            <tr><th>交通/車資</th><td><input type="text" id="ipt_cost2" placeholder="說明"></td></tr>
-            <tr><th>餐食安排</th><td><input type="text" id="ipt_cost3" placeholder="說明"></td></tr>
-            <tr><th>住宿安排</th><td><input type="text" id="ipt_cost4" placeholder="說明"></td></tr>
-            <tr><th>包含/不包含</th><td><input type="text" id="ipt_cost5" placeholder="備註事項"></td></tr>
+            <tr><th>個人團費</th><td><input type="text" id="ipt_c1"></td></tr>
+            <tr><th>餐食/交通</th><td><input type="text" id="ipt_c2"></td></tr>
+            <tr><th>住宿安排</th><td><input type="text" id="ipt_c3"></td></tr>
+            <tr><th>費用包含</th><td><input type="text" id="ipt_c4"></td></tr>
+            <tr><th>備註事項</th><td><input type="text" id="ipt_c5"></td></tr>
         </table>
 
-        <h2>每日行程規劃</h2>
-        <div id="itineraryList">
-            <p class="no-print" style="text-align: center; color: #666; padding: 30px; border: 2px dashed #ccc;">
-                請輸入上方「天數」與「日期」後，點擊下方「1. 生成行程表」開始編輯。
-            </p>
+        <div id="itineraryContainer">
+            <p style="text-align: center; color: #999; padding: 20px;">請點擊「生成行程表」開始編輯</p>
         </div>
         
-        <div style="margin-top: 60px; display: flex; justify-content: space-between; page-break-inside: avoid;">
-            <div style="border-top: 1px solid #000; width: 40%; padding-top: 10px; text-align: center;">旅行社簽章 / 經辦人</div>
-            <div style="border-top: 1px solid #000; width: 40%; padding-top: 10px; text-align: center;">客戶確認簽名</div>
-        </div>
     </div>
-    
-    <div style="height: 100px;"></div>
 
-    <div class="toolbar-container no-print">
-        <button class="btn btn-save" onclick="saveData()">💾 儲存進度</button>
-        <button class="btn" style="background:#8e44ad;" onclick="loadData()">📂 讀取舊檔</button>
-        <span style="border-right: 1px solid #ccc; margin: 0 10px;"></span>
-        
-        <div id="editButtons">
-            <button class="btn btn-gen" onclick="generateDays()">1. 生成行程表</button>
-            <button class="btn btn-preview" onclick="togglePreview(true)">2. 預覽與下載</button>
+    <div class="toolbar no-print">
+        <button class="btn btn-save" onclick="saveData()">💾 儲存</button>
+        <button class="btn" style="background:#8e44ad;" onclick="loadData()">📂 讀檔</button>
+        <div id="editTools">
+            <button class="btn btn-gen" onclick="buildItinerary()">1. 生成行程表</button>
+            <button class="btn btn-preview" onclick="toggleMode(true)">2. 預覽與下載</button>
         </div>
-
-        <div id="previewButtons" class="hidden">
-            <button class="btn" onclick="togglePreview(false)">⬅ 回到編輯</button>
-            <button class="btn" style="background:#e67e22;" onclick="exportPDF()">📥 下載 PDF</button>
-            <button class="btn" style="background:#27ae60;" onclick="exportWord()">📥 下載 Word</button>
+        <div id="downloadTools" class="hidden">
+            <button class="btn" onclick="toggleMode(false)">⬅ 回編輯</button>
+            <button class="btn" style="background:#e67e22;" onclick="downloadPDF()">📥 下載 PDF</button>
+            <button class="btn" style="background:#27ae60;" onclick="downloadWord()">📥 下載 Word</button>
         </div>
     </div>
 
     <script>
-        const weekDays = ['(日)', '(一)', '(二)', '(三)', '(四)', '(五)', '(六)'];
+        function autoHeight(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
+        document.addEventListener('input', e => { if(e.target.tagName === 'TEXTAREA') autoHeight(e.target); });
 
-        // 文字框自動縮放
-        function autoResize(el) {
-            el.style.height = 'auto';
-            el.style.height = el.scrollHeight + 'px';
-        }
-
-        // 格式化日期
-        function formatTwDate(dateStr) {
-            if (!dateStr) return "";
-            const d = new Date(dateStr);
-            return isNaN(d.getTime()) ? "" : `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
-        }
-
-        // 生成行程
-        function generateDays() {
-            const days = document.getElementById('ipt_totalDays').value;
-            const start = document.getElementById('ipt_startDate').value;
-            const list = document.getElementById('itineraryList');
-            
+        function buildItinerary() {
+            const days = document.getElementById('ipt_days').value;
+            const start = document.getElementById('ipt_date').value;
+            const container = document.getElementById('itineraryContainer');
             if (!days || days <= 0) return alert("請輸入天數");
-            if (list.querySelector('.day-container') && !confirm("重新生成會清空內容，確定嗎？")) return;
-
-            list.innerHTML = '';
-            let currDate = start ? new Date(start) : null;
-
+            
+            container.innerHTML = '';
+            let d = start ? new Date(start) : null;
             for(let i=1; i<=days; i++) {
-                let dateLabel = currDate ? (formatTwDate(currDate.toISOString().split('T')[0]) + " " + weekDays[currDate.getDay()]) : `Day ${i}`;
-                if(currDate) currDate.setDate(currDate.getDate()+1);
-
-                const div = document.createElement('div');
-                div.className = 'day-container';
-                div.innerHTML = `
-                    <div class="day-header">
-                        <span class="day-title">${dateLabel}</span>
-                        <button class="btn btn-sm no-print" onclick="addItem(this)">+ 加活動</button>
-                    </div>
+                let dateStr = d ? `${d.getMonth()+1}/${d.getDate()}` : `Day ${i}`;
+                if(d) d.setDate(d.getDate()+1);
+                
+                const group = document.createElement('div');
+                group.className = 'day-group';
+                group.innerHTML = `
+                    <div class="day-header"><span class="day-title">Day ${i} (${dateStr})</span><button class="btn no-print" style="padding:2px 10px; font-size:12px;" onclick="addAct(this)">+活動</button></div>
                     <div class="items-list">
-                        <div class="itinerary-item">
-                            <input type="text" class="ipt-time" placeholder="00:00">
-                            <textarea class="ipt-content" placeholder="活動內容..." rows="1" oninput="autoResize(this)"></textarea>
-                            <button class="btn btn-danger no-print" onclick="this.parentElement.remove()">✕</button>
-                        </div>
-                        <div style="margin-top: 15px; display: flex; align-items: flex-start; border-top: 1px dashed #ccc; padding-top:10px;">
-                            <span style="font-weight:bold; width: 60px; color:#666; padding-top:5px">備註：</span>
-                            <textarea class="ipt-note" placeholder="住宿或注意事項..." rows="1" oninput="autoResize(this)"></textarea>
-                        </div>
+                        <div class="itinerary-item"><input type="text" class="ipt-time" placeholder="時間"><textarea placeholder="內容"></textarea></div>
+                        <div class="note-area"><span class="note-label">備註：</span><textarea class="ipt-note" placeholder="當天注意事項..."></textarea></div>
                     </div>`;
-                list.appendChild(div);
+                container.appendChild(group);
             }
         }
 
-        function addItem(btn) {
-            const list = btn.closest('.day-container').querySelector('.items-list');
-            const noteDiv = list.lastElementChild;
+        function addAct(btn) {
+            const list = btn.closest('.day-group').querySelector('.items-list');
             const item = document.createElement('div');
             item.className = 'itinerary-item';
-            item.innerHTML = `
-                <input type="text" class="ipt-time" placeholder="00:00">
-                <textarea class="ipt-content" placeholder="活動內容..." rows="1" oninput="autoResize(this)"></textarea>
-                <button class="btn btn-danger no-print" onclick="this.parentElement.remove()">✕</button>`;
-            list.insertBefore(item, noteDiv);
+            item.innerHTML = `<input type="text" class="ipt-time" placeholder="時間"><textarea placeholder="內容"></textarea><button class="no-print" onclick="this.parentElement.remove()" style="border:none; background:none; cursor:pointer;">✕</button>`;
+            list.insertBefore(item, list.lastElementChild);
         }
 
-        // 預覽切換
-        function togglePreview(isPreview) {
+        function toggleMode(isPreview) {
             document.body.classList.toggle('preview-mode', isPreview);
-            document.getElementById('editButtons').classList.toggle('hidden', isPreview);
-            document.getElementById('previewButtons').classList.toggle('hidden', !isPreview);
-            
-            const dateIpt = document.getElementById('ipt_startDate');
-            if (isPreview) {
+            document.getElementById('editTools').classList.toggle('hidden', isPreview);
+            document.getElementById('downloadTools').classList.toggle('hidden', !isPreview);
+            document.querySelectorAll('input, textarea').forEach(el => el.readOnly = isPreview);
+            if(isPreview) {
+                document.querySelectorAll('textarea').forEach(t => autoHeight(t));
                 saveData();
-                document.querySelectorAll('input, textarea').forEach(el => el.readOnly = true);
-                if(dateIpt.value) {
-                    dateIpt.dataset.old = dateIpt.value;
-                    dateIpt.type = 'text';
-                    dateIpt.value = formatTwDate(dateIpt.dataset.old);
-                }
-            } else {
-                document.querySelectorAll('input, textarea').forEach(el => el.readOnly = false);
-                if(dateIpt.dataset.old) {
-                    dateIpt.type = 'date';
-                    dateIpt.value = dateIpt.dataset.old;
-                }
             }
-            document.querySelectorAll('textarea').forEach(tx => autoResize(tx));
         }
 
-        // 下載 PDF (直接轉檔)
-        function exportPDF() {
-            const element = document.getElementById('exportArea');
+        function downloadPDF() {
+            const element = document.getElementById('pdfArea');
             const opt = {
-                margin: 10,
-                filename: '旅遊行程確認單.pdf',
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2 },
+                margin: 0,
+                filename: '旅遊行程.pdf',
+                image: { type: 'jpeg', quality: 1 },
+                html2canvas: { scale: 2, width: 794 }, // 794px 是 A4 96DPI 的寬度
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
             html2pdf().set(opt).from(element).save();
         }
 
-        // 下載 Word (修復排版與元件問題)
-        function exportWord() {
-            const clone = document.getElementById('exportArea').cloneNode(true);
-            clone.querySelectorAll('.no-print').forEach(el => el.remove());
+        function downloadWord() {
+            const area = document.getElementById('pdfArea').cloneNode(true);
+            area.querySelectorAll('.no-print').forEach(n => n.remove());
 
-            // 重要：Word 不支援 Input，必須轉成文字
-            clone.querySelectorAll('input, textarea').forEach(el => {
+            // 將所有輸入框轉為文字，並將 Day Group 轉為 Table 確保備註不跑掉
+            area.querySelectorAll('.day-group').forEach(group => {
+                const title = group.querySelector('.day-title').innerText;
+                const items = group.querySelectorAll('.itinerary-item');
+                const note = group.querySelector('.ipt-note').value;
+                
+                const table = document.createElement('table');
+                table.style.width = '100%'; table.style.border = '1px solid #ccc'; table.style.marginBottom = '20px';
+                table.style.borderCollapse = 'collapse';
+
+                let rows = `<tr><th colspan="2" style="background:#2c3e50; color:#fff; text-align:left; padding:8px;">${title}</th></tr>`;
+                items.forEach(it => {
+                    const time = it.querySelector('.ipt-time').value;
+                    const content = it.querySelector('textarea').value.replace(/\n/g, '<br>');
+                    rows += `<tr><td style="width:80px; border-bottom:1px solid #eee; padding:5px; font-weight:bold;">${time}</td><td style="border-bottom:1px solid #eee; padding:5px;">${content}</td></tr>`;
+                });
+                rows += `<tr><td colspan="2" style="background:#f4f6f7; padding:8px;"><b>備註：</b>${note.replace(/\n/g, '<br>')}</td></tr>`;
+                
+                table.innerHTML = rows;
+                group.replaceWith(table);
+            });
+
+            area.querySelectorAll('input, textarea').forEach(el => {
                 const span = document.createElement('span');
-                span.innerText = el.value || "";
+                span.innerHTML = el.value.replace(/\n/g, '<br>');
                 el.replaceWith(span);
             });
 
-            // 針對 Word 優化 Table 樣式
-            const htmlContent = `
-                <!DOCTYPE html>
-                <html>
-                <head><meta charset="utf-8">
-                <style>
-                    body { font-family: "PMingLiU", serif; }
-                    .day-header { background: #2c3e50; color: #ffffff; padding: 10px; }
-                    .cost-table { border-collapse: collapse; width: 100%; }
-                    .cost-table th, .cost-table td { border: 1px solid black; padding: 8px; }
-                    .items-list { background: #f4f6f7; padding: 10px; }
-                </style>
-                </head>
-                <body>${clone.innerHTML}</body>
-                </html>`;
-
-            const converted = htmlDocx.asBlob(htmlContent);
-            saveAs(converted, '旅遊行程確認單.docx');
+            const html = `<html><head><meta charset="utf-8"><style>body{font-family:SimSun;}</style></head><body>${area.innerHTML}</body></html>`;
+            saveAs(htmlDocx.asBlob(html), '旅遊行程.docx');
         }
 
-        // 存取功能
         function saveData() {
             const data = {
-                agency: document.getElementById('ipt_agencyName').value,
-                basic: [
-                    document.getElementById('ipt_company').value,
-                    document.getElementById('ipt_contact').value,
-                    document.getElementById('ipt_phone').value,
-                    document.getElementById('ipt_startDate').value,
-                    document.getElementById('ipt_totalDays').value
-                ],
-                costs: [1,2,3,4,5].map(i => document.getElementById('ipt_cost'+i).value),
-                html: document.getElementById('itineraryList').innerHTML
+                agency: document.getElementById('ipt_agency').value,
+                base: [document.getElementById('ipt_company').value, document.getElementById('ipt_contact').value, document.getElementById('ipt_phone').value, document.getElementById('ipt_date').value, document.getElementById('ipt_days').value],
+                costs: [1,2,3,4,5].map(i => document.getElementById('ipt_c'+i).value),
+                html: document.getElementById('itineraryContainer').innerHTML
             };
-            localStorage.setItem('tripData_final', JSON.stringify(data));
+            localStorage.setItem('trip_data', JSON.stringify(data));
         }
 
         function loadData() {
-            const data = JSON.parse(localStorage.getItem('tripData_final'));
-            if(!data) return alert("尚無存檔紀錄");
-            document.getElementById('ipt_agencyName').value = data.agency;
-            document.getElementById('ipt_company').value = data.basic[0];
-            document.getElementById('ipt_contact').value = data.basic[1];
-            document.getElementById('ipt_phone').value = data.basic[2];
-            document.getElementById('ipt_startDate').value = data.basic[3];
-            document.getElementById('ipt_totalDays').value = data.basic[4];
-            data.costs.forEach((v, i) => document.getElementById('ipt_cost'+(i+1)).value = v);
-            document.getElementById('itineraryList').innerHTML = data.html;
-            setTimeout(() => document.querySelectorAll('textarea').forEach(tx => autoResize(tx)), 200);
-            alert("讀取成功！");
+            const data = JSON.parse(localStorage.getItem('trip_data'));
+            if(!data) return alert("無紀錄");
+            document.getElementById('ipt_agency').value = data.agency;
+            document.getElementById('ipt_company').value = data.base[0];
+            document.getElementById('ipt_contact').value = data.base[1];
+            document.getElementById('ipt_phone').value = data.base[2];
+            document.getElementById('ipt_date').value = data.base[3];
+            document.getElementById('ipt_days').value = data.base[4];
+            data.costs.forEach((v, i) => document.getElementById('ipt_c'+(i+1)).value = v);
+            document.getElementById('itineraryContainer').innerHTML = data.html;
+            setTimeout(() => document.querySelectorAll('textarea').forEach(t => autoHeight(t)), 200);
         }
     </script>
 </body>
