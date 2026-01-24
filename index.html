@@ -5,12 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>旅遊行程</title>
     
-    <!-- 套件載入 -->
+    <!-- 引入必要套件 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/evidenceprime/html-docx-js@master/dist/html-docx.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <style>
+        /* --- 全域設定 --- */
         * { box-sizing: border-box; -webkit-print-color-adjust: exact; }
 
         :root {
@@ -30,6 +31,7 @@
             display: flex; flex-direction: column; align-items: center;
         }
 
+        /* 手機外層滾動條 (確保 A4 內容不被擠壓) */
         .page-wrapper {
             width: 100%;
             overflow-x: auto;
@@ -37,8 +39,10 @@
             flex-direction: column;
             align-items: center;
             padding-bottom: 100px;
+            -webkit-overflow-scrolling: touch;
         }
 
+        /* A4 紙張標準容器 */
         .container {
             width: 210mm;
             min-height: 297mm;
@@ -47,7 +51,7 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             margin: 20px 10px;
             position: relative;
-            flex-shrink: 0;
+            flex-shrink: 0; /* 禁止手機自動縮小紙張 */
         }
 
         .company-header { text-align: center; margin-bottom: 20px; }
@@ -59,6 +63,7 @@
 
         h1 { text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 20px; font-size: 24pt; letter-spacing: 2px; }
 
+        /* 基本資料區 */
         .form-section { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
         .form-group { display: flex; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 5px; }
         label { font-size: 10pt; font-weight: bold; min-width: 110px; color: #444; }
@@ -66,11 +71,12 @@
         input, textarea { padding: 8px; border: 1px solid #eee; font-size: 11pt; font-family: inherit; width: 100%; background: #fafafa; border-radius: 4px; }
         textarea { resize: none; overflow: hidden; line-height: 1.5; }
 
+        /* 費用明細表 */
         .cost-table { width: 100%; border-collapse: collapse; margin-bottom: 25px; }
         .cost-table th, .cost-table td { border: 1px solid #000; padding: 10px; text-align: left; vertical-align: top; }
         .cost-table th { background-color: #f8f9fa; width: 120px; font-weight: bold; }
 
-        /* --- 核心設定：讓 Day 1 強制從第二頁開始 --- */
+        /* --- 核心設定：Day 1 強制跳頁 --- */
         #itineraryContainer .day-group:first-of-type {
             page-break-before: always;
         }
@@ -83,14 +89,15 @@
         .itinerary-item { display: grid; grid-template-columns: 80px 1fr auto; gap: 10px; border-bottom: 1px dotted #ccc; padding: 8px 0; align-items: flex-start; }
         .itinerary-item:last-child { border-bottom: none; }
         
-        .ipt-time { font-weight: bold; text-align: center; border: none; background: transparent; }
         .note-area { margin-top: 10px; padding-top: 10px; border-top: 1px solid #ccc; display: flex; }
         .note-label { font-weight: bold; width: 60px; font-size: 10pt; color: #666; padding-top: 5px; }
 
+        /* 指示框樣式 (恢復清晰版) */
         .instruction-box {
-            text-align: center; color: #666; padding: 40px; border: 2px dashed #ccc; background: #fafafa; margin: 20px 0; border-radius: 8px;
+            text-align: center; color: #666; padding: 40px; border: 2px dashed #ccc; background: #fafafa; margin: 20px 0; border-radius: 8px; line-height: 2;
         }
 
+        /* 置底工具列 */
         .toolbar {
             position: fixed; bottom: 0; left: 0; width: 100%; background: #fff; border-top: 1px solid #ccc;
             padding: 12px; display: flex; justify-content: center; gap: 8px; z-index: 9999; box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
@@ -116,7 +123,7 @@
             <h1>旅遊行程</h1>
 
             <div class="form-section">
-                <div class="form-group"><label>客戶團體：</label><input type="text" id="ipt_company" placeholder="客戶名稱"></div>
+                <div class="form-group"><label>客戶名稱：</label><input type="text" id="ipt_company" placeholder="填寫客戶名稱"></div>
                 <div class="form-group"><label>聯絡窗口：</label><input type="text" id="ipt_contact" placeholder="姓名"></div>
                 <div class="form-group"><label>聯絡電話：</label><input type="text" id="ipt_phone" placeholder="電話"></div>
                 <div class="form-group"><label>出發日期：</label><input type="date" id="ipt_date"></div>
@@ -125,15 +132,14 @@
 
             <table class="cost-table">
                 <tr><th>個人團費</th><td><input type="text" id="ipt_c1" placeholder="$ /人"></td></tr>
-                <tr><th>費用包含</th><td><input type="text" id="ipt_c2" placeholder="交通、餐食、門票等"></td></tr>
-                <tr><th>住宿安排</th><td><input type="text" id="ipt_c3" placeholder="飯店名稱與房型"></td></tr>
-                <tr><th>備註事項</th><td><input type="text" id="ipt_c4" placeholder="集合時間地點與注意事項"></td></tr>
+                <tr><th>費用包含</th><td><input type="text" id="ipt_c2" placeholder="門票、保險、餐食說明"></td></tr>
+                <tr><th>住宿安排</th><td><input type="text" id="ipt_c3" placeholder="飯店、房型說明"></td></tr>
+                <tr><th>備註事項</th><td><input type="text" id="ipt_c4" placeholder="注意事項或集合點"></td></tr>
             </table>
 
-            <!-- 這裡就是 Day 1 開始的地方，會自動觸發分頁 -->
             <div id="itineraryContainer">
                 <div class="instruction-box no-print">
-                    ⬇ 步驟 1：請確認上方天數與日期<br>
+                    ⬇ 步驟 1：請確認天數與日期<br>
                     ⬇ 步驟 2：點擊下方綠色「1. 生成行程表」
                 </div>
             </div>
@@ -160,16 +166,18 @@
     </div>
 
     <script>
+        // --- 觸覺回饋 ---
         function triggerHaptic() { if (navigator.vibrate) navigator.vibrate(30); }
         function autoHeight(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
 
+        // 生成行程表
         function buildItinerary() {
             triggerHaptic();
             const days = document.getElementById('ipt_days').value;
             const start = document.getElementById('ipt_date').value;
             const container = document.getElementById('itineraryContainer');
-            if (!days || days <= 0) return alert("請輸入天數");
-            if (container.querySelector('.day-group') && !confirm("重新生成會覆蓋內容，確定嗎？")) return;
+            if (!days || days <= 0) return alert("請輸入行程天數");
+            if (container.querySelector('.day-group') && !confirm("重新生成會覆蓋現有行程，確定嗎？")) return;
 
             container.innerHTML = '';
             let d = start ? new Date(start) : null;
@@ -191,7 +199,7 @@
                         </div>
                         <div class="note-area">
                             <span class="note-label">備註：</span>
-                            <textarea oninput="autoHeight(this)" class="ipt-note" placeholder="備註..." rows="1"></textarea>
+                            <textarea oninput="autoHeight(this)" class="ipt-note" placeholder="當天住宿、備註..." rows="1"></textarea>
                         </div>
                     </div>`;
                 container.appendChild(group);
@@ -220,6 +228,7 @@
             }
         }
 
+        // --- PDF 下載：解決手機跑版的核心 ---
         function downloadPDF() {
             triggerHaptic();
             const element = document.getElementById('pdfArea');
@@ -230,12 +239,17 @@
                 html2canvas: { 
                     scale: 2, 
                     useCORS: true, 
-                    width: 794,
+                    scrollX: 0, 
+                    scrollY: 0,
+                    width: 794, // 固定以 A4 像素寬度抓取畫面
                     onclone: (clonedDoc) => {
+                        // 在克隆出的下載物件中，強制重設 CSS 防止手機響應式干擾
                         const el = clonedDoc.getElementById('pdfArea');
                         el.style.width = '210mm';
+                        el.style.margin = '0';
                         el.style.padding = '20mm 15mm';
                         clonedDoc.body.style.width = '210mm';
+                        clonedDoc.body.style.backgroundColor = '#ffffff';
                     }
                 },
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
@@ -243,6 +257,7 @@
             html2pdf().set(opt).from(element).save();
         }
 
+        // --- Word 下載：Day 1 同步分頁 ---
         function downloadWord() {
             triggerHaptic();
             const area = document.getElementById('pdfArea').cloneNode(true);
@@ -258,18 +273,18 @@
                 table.setAttribute('border', '1');
                 table.style.width = '100%'; table.style.borderCollapse = 'collapse'; table.style.marginBottom = '20px';
                 
-                // --- Word 專屬：在 Day 1 加入換頁符號 ---
+                // Day 1 在 Word 裡手動插入換頁樣式
                 if (index === 0) {
                     table.style.pageBreakBefore = "always";
                 }
 
-                let rows = `<tr><th colspan="2" style="background:#2c3e50; color:#ffffff; text-align:left; padding:8px;">${title}</th></tr>`;
+                let rows = `<tr><th colspan="2" style="background:#2c3e50; color:#ffffff; text-align:left; padding:10px;">${title}</th></tr>`;
                 items.forEach(it => {
                     const time = it.querySelector('.ipt-time').value;
                     const content = it.querySelector('textarea').value.replace(/\n/g, '<br>');
-                    rows += `<tr><td style="width:70px; border:1px solid #ddd; padding:5px; vertical-align:top;"><b>${time}</b></td><td style="border:1px solid #ddd; padding:5px; vertical-align:top;">${content}</td></tr>`;
+                    rows += `<tr><td style="width:80px; padding:8px; font-weight:bold; vertical-align:top;">${time}</td><td style="padding:8px; vertical-align:top;">${content}</td></tr>`;
                 });
-                rows += `<tr><td colspan="2" style="background:#f4f6f7; border:1px solid #ddd; padding:8px;"><b>備註：</b><br>${note.replace(/\n/g, '<br>')}</td></tr>`;
+                rows += `<tr><td colspan="2" style="background:#f4f6f7; padding:10px; font-size:10.5pt;"><b>備註事項：</b><br>${note.replace(/\n/g, '<br>')}</td></tr>`;
                 
                 table.innerHTML = rows;
                 group.replaceWith(table);
@@ -281,10 +296,11 @@
                 el.replaceWith(span);
             });
 
-            const html = `<html><head><meta charset="utf-8"><style>body{font-family:serif;}</style></head><body>${area.innerHTML}</body></html>`;
+            const html = `<html><head><meta charset="utf-8"><style>body{font-family:serif; line-height:1.5;}</style></head><body>${area.innerHTML}</body></html>`;
             saveAs(htmlDocx.asBlob(html), '旅遊行程.docx');
         }
 
+        // 儲存與讀取
         function saveData() {
             if(!document.body.classList.contains('preview-mode')) triggerHaptic();
             const d = {
@@ -293,13 +309,13 @@
                 c: [1,2,3,4].map(i => document.getElementById('ipt_c'+i).value),
                 h: document.getElementById('itineraryContainer').innerHTML
             };
-            localStorage.setItem('tripSaveFinal_PB', JSON.stringify(d));
+            localStorage.setItem('tripSaveFinal_Mobile', JSON.stringify(d));
         }
 
         function loadData() {
             triggerHaptic();
-            const d = JSON.parse(localStorage.getItem('tripSaveFinal_PB'));
-            if(!d) return alert("無存檔");
+            const d = JSON.parse(localStorage.getItem('tripSaveFinal_Mobile'));
+            if(!d) return alert("沒有找到暫存資料");
             document.getElementById('ipt_agency').value = d.a;
             document.getElementById('ipt_company').value = d.b[0];
             document.getElementById('ipt_contact').value = d.b[1];
@@ -308,7 +324,7 @@
             document.getElementById('ipt_days').value = d.b[4];
             d.c.forEach((v, i) => document.getElementById('ipt_c'+(i+1)).value = v);
             document.getElementById('itineraryContainer').innerHTML = d.h;
-            setTimeout(() => document.querySelectorAll('textarea').forEach(t => autoHeight(t)), 200);
+            setTimeout(() => { document.querySelectorAll('textarea').forEach(t => autoHeight(t)); }, 200);
             alert("✅ 讀取成功");
         }
     </script>
