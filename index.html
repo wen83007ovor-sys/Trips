@@ -249,30 +249,33 @@
 
         // --- PDF 下載 (維持原樣) ---
         function downloadPDF() {
-            const element = document.getElementById('pdfArea');
-            element.classList.add('pdf-calculating');
-            
-            const opt = {
-                margin: 0,
-                filename: '旅遊行程表.pdf',
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { 
-                    scale: 2, 
-                    useCORS: true, 
-                    windowWidth: 794,
-                    scrollY: -window.scrollY
-                },
-                pagebreak: { mode: ['css', 'legacy'] },
-                jsPDF: { unit: 'pt', format: 'a4', orientation: 'portrait' }
-            };
+    const element = document.getElementById('pdfArea');
+    element.classList.add('pdf-calculating');
+    
+    setTimeout(() => {
+        const opt = {
+            margin: 0,
+            filename: '旅遊行程表.pdf',
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { 
+                scale: 2, 
+                useCORS: true, 
+                windowWidth: 794, // 強制 A4 寬度
+                scrollY: 0,       // 確保從最頂部開始截圖
+                scrollX: 0
+            },
+            pagebreak: { mode: ['css', 'legacy'] },
+            jsPDF: { unit: 'pt', format: 'a4', orientation: 'portrait' }
+        };
 
-            html2pdf().set(opt).from(element).save().then(() => {
-                element.classList.remove('pdf-calculating');
-            }).catch(err => {
-                element.classList.remove('pdf-calculating');
-            });
-        }
-
+        html2pdf().set(opt).from(element).save().then(() => {
+            element.classList.remove('pdf-calculating');
+        }).catch(err => {
+            element.classList.remove('pdf-calculating');
+            console.error("PDF Error:", err);
+        });
+    }, 100); 
+}
         // --- Docs (.docx) 下載 ---
         function downloadWord() {
             const area = document.getElementById('pdfArea').cloneNode(true);
