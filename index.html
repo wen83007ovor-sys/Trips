@@ -6,7 +6,6 @@
     <title>旅遊行程</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/evidenceprime/html-docx-js@master/dist/html-docx.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <style>
@@ -29,6 +28,7 @@
 
         body.preview-mode { background-color: #333 !important; }
 
+        /* 容器設計 */
         .container {
             width: 95%;
             max-width: 210mm;
@@ -40,12 +40,7 @@
             position: relative;
         }
 
-        /* 防止 PDF/列印分頁切斷內容 */
-        .day-group, .cost-table, .form-section {
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-        }
-
+        /* 標題與基本資料 */
         .company-header input {
             font-size: 20pt; font-weight: bold; text-align: center; border: none;
             border-bottom: 2px solid #eee; width: 100%; color: var(--primary-color);
@@ -53,18 +48,19 @@
         }
         h1 { text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; font-size: 24pt; margin: 10px 0 20px 0; }
 
-        /* 基本資料佈局 */
         .form-section { display: grid; grid-template-columns: 1fr; gap: 8px; margin-bottom: 20px; }
         @media (min-width: 600px) { .form-section { grid-template-columns: 1fr 1fr; gap: 15px; } }
         .form-group { display: flex; align-items: center; border-bottom: 1px solid #eee; padding: 5px 0; }
         label { font-size: 10.5pt; font-weight: bold; min-width: 80px; color: #333; }
         input, textarea { padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 11pt; width: 100%; background: #fafafa; }
         
+        /* 費用表格 */
         .cost-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
         .cost-table th, .cost-table td { border: 1px solid #000; padding: 8px; font-size: 10.5pt; }
         .cost-table th { background-color: #f8f9fa; width: 85px; text-align: center; }
 
-        .day-group { margin-bottom: 20px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; background: #fff; }
+        /* 行程區塊 */
+        .day-group { margin-bottom: 20px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; background: #fff; page-break-inside: avoid; }
         .day-header { background: var(--primary-color); color: #fff; padding: 12px; font-weight: bold; font-size: 14px; }
         .items-list { padding: 8px; }
         .itinerary-item { display: flex; gap: 5px; margin-bottom: 10px; align-items: flex-start; }
@@ -121,7 +117,7 @@
             <tr><th>備註事項</th><td><input type="text" id="ipt_c5" placeholder="注意事項"></td></tr>
         </table>
         <div id="itineraryContainer">
-            <p style="text-align: center; color: #999; padding: 30px;">請點擊「生成」按鈕</p>
+            <p style="text-align: center; color: #999; padding: 30px;">請點擊下方「生成」按鈕</p>
         </div>
     </div>
 
@@ -147,23 +143,15 @@
             const start = document.getElementById('ipt_date').value;
             const container = document.getElementById('itineraryContainer');
             if (!days || days <= 0) return alert("請輸入天數");
-            
             container.innerHTML = '';
             let d = start ? new Date(start) : null;
             for(let i=1; i<=days; i++) {
                 let dateStr = d ? `${d.getMonth()+1}/${d.getDate()}` : `Day ${i}`;
                 if(d) d.setDate(d.getDate()+1);
-                
-                let itemsHtml = '';
-                if(existingData && existingData.days[i-1]) {
-                    existingData.days[i-1].items.forEach(item => {
-                        itemsHtml += createItemRow(item.time, item.content);
-                    });
-                } else {
-                    itemsHtml = createItemRow("08:00", "");
-                }
+                let itemsHtml = (existingData && existingData.days[i-1]) 
+                    ? existingData.days[i-1].items.map(item => createItemRow(item.time, item.content)).join('')
+                    : createItemRow("08:00", "");
                 const noteVal = (existingData && existingData.days[i-1]) ? existingData.days[i-1].note : "";
-
                 const group = document.createElement('div');
                 group.className = 'day-group';
                 group.innerHTML = `
@@ -179,7 +167,7 @@
         function createItemRow(time, content) {
             return `<div class="itinerary-item">
                 <input type="text" class="ipt-time" value="${time}">
-                <textarea placeholder="行程內容..." rows="1" oninput="autoHeight(this)">${content}</textarea>
+                <textarea placeholder="內容..." rows="1" oninput="autoHeight(this)">${content}</textarea>
                 <button class="no-print" onclick="this.parentElement.remove()" style="border:none; background:none; color:red; font-size:20px; padding:0 5px;">×</button>
             </div>`;
         }
@@ -192,17 +180,9 @@
         }
 
         function toggleMode(isPreview) {
-            const editGroup = document.getElementById('group-edit');
-            const previewGroup = document.getElementById('group-preview');
-            if (isPreview) {
-                document.body.classList.add('preview-mode');
-                editGroup.classList.add('hidden');
-                previewGroup.classList.remove('hidden');
-            } else {
-                document.body.classList.remove('preview-mode');
-                editGroup.classList.remove('hidden');
-                previewGroup.classList.add('hidden');
-            }
+            document.body.classList.toggle('preview-mode', isPreview);
+            document.getElementById('group-edit').classList.toggle('hidden', isPreview);
+            document.getElementById('group-preview').classList.toggle('hidden', !isPreview);
             document.querySelectorAll('input, textarea').forEach(el => el.readOnly = isPreview);
             window.scrollTo(0, 0);
         }
@@ -226,115 +206,112 @@
                 costs: [1,2,3,4,5].map(i => document.getElementById('ipt_c'+i).value),
                 days: days
             };
-            localStorage.setItem('trip_save_final', JSON.stringify(data));
+            localStorage.setItem('trip_final_save', JSON.stringify(data));
             alert("✅ 存檔成功");
         }
 
         function loadData() {
-            const data = JSON.parse(localStorage.getItem('trip_save_final'));
-            if(!data) return alert("無存檔紀錄");
+            const data = JSON.parse(localStorage.getItem('trip_final_save'));
+            if(!data) return alert("無紀錄");
             document.getElementById('ipt_agency').value = data.agency || "";
-            document.getElementById('ipt_company').value = data.company || "";
-            document.getElementById('ipt_contact').value = data.contact || "";
-            document.getElementById('ipt_phone').value = data.phone || "";
-            document.getElementById('ipt_date').value = data.date || "";
-            document.getElementById('ipt_days').value = data.daysCount || 3;
+            document.getElementById('ipt_company').value = data.company;
+            document.getElementById('ipt_contact').value = data.contact;
+            document.getElementById('ipt_phone').value = data.phone;
+            document.getElementById('ipt_date').value = data.date;
+            document.getElementById('ipt_days').value = data.daysCount;
             data.costs.forEach((v, i) => document.getElementById('ipt_c'+(i+1)).value = v);
             buildItinerary(data);
-            alert("📂 讀檔完成");
+            alert("📂 讀檔成功");
         }
 
-        // --- 修正 PDF 置中 ---
+        // --- 修正 PDF：使用隱藏克隆法確保 100% 置中且不偏移 ---
         function downloadPDF() {
             const element = document.getElementById('pdfArea');
-            // 強制設定寬度為 A4 像素並置中
-            element.style.width = "794px";
-            element.style.margin = "0 auto";
+            // 建立一個臨時隱藏容器，寬度固定為 A4 寬 (794px)
+            const wrapper = document.createElement('div');
+            wrapper.style.position = 'absolute';
+            wrapper.style.left = '-9999px';
+            wrapper.style.top = '0';
+            wrapper.style.width = '794px';
+            wrapper.style.background = '#fff';
+            
+            const clone = element.cloneNode(true);
+            clone.style.width = '794px';
+            clone.style.margin = '0';
+            clone.style.padding = '40px'; // 增加邊距美化
+            wrapper.appendChild(clone);
+            document.body.appendChild(wrapper);
 
             const opt = {
-                margin: 10,
+                margin: 0,
                 filename: '行程表.pdf',
                 image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, useCORS: true, windowWidth: 850 },
-                pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                html2canvas: { 
+                    scale: 2, 
+                    useCORS: true, 
+                    width: 794,
+                    scrollY: 0, 
+                    scrollX: 0,
+                    x: 0, 
+                    y: 0 
+                },
+                jsPDF: { unit: 'pt', format: 'a4', orientation: 'portrait' }
             };
             
-            html2pdf().set(opt).from(element).save().then(() => {
-                // 恢復原始響應式設定
-                element.style.width = "95%";
-                element.style.margin = "10px auto 140px auto";
+            html2pdf().set(opt).from(wrapper).save().then(() => {
+                document.body.removeChild(wrapper);
             });
         }
 
-        // --- 修正 Word 手機相容性：將 Grid/Flex 強制轉為 Table ---
+        // --- 修正 Word：改用 .doc 格式 (MIME HTML) 確保手機 Word App 能開啟 ---
         function downloadWord() {
             const area = document.getElementById('pdfArea').cloneNode(true);
             area.querySelectorAll('.no-print').forEach(n => n.remove());
 
-            // 1. 轉換基本資料 Grid 為 Table
-            const formSection = area.querySelector('.form-section');
-            if (formSection) {
-                const groups = formSection.querySelectorAll('.form-group');
-                let tableHtml = '<table style="width:100%; border-bottom:1px solid #eee; margin-bottom:20px;">';
-                for (let i = 0; i < groups.length; i += 2) {
-                    tableHtml += '<tr>';
-                    for (let j = 0; j < 2; j++) {
-                        const idx = i + j;
-                        if (groups[idx]) {
-                            const label = groups[idx].querySelector('label').innerText;
-                            const val = groups[idx].querySelector('input').value;
-                            tableHtml += `<td style="width:15%; font-weight:bold;">${label}</td><td style="width:35%;">${val}</td>`;
-                        } else {
-                            tableHtml += '<td></td><td></td>';
+            // 將所有表單轉為 Table 結構 (手機 Word App 只認 Table)
+            const formSect = area.querySelector('.form-section');
+            if (formSect) {
+                const gps = formSect.querySelectorAll('.form-group');
+                let tb = '<table style="width:100%; border:none; margin-bottom:20px;">';
+                for(let i=0; i<gps.length; i+=2) {
+                    tb += '<tr>';
+                    for(let j=0; j<2; j++) {
+                        if(gps[i+j]) {
+                            const l = gps[i+j].querySelector('label').innerText;
+                            const v = gps[i+j].querySelector('input').value;
+                            tb += `<td style="width:15%; font-weight:bold;">${l}</td><td style="width:35%;">${v}</td>`;
                         }
                     }
-                    tableHtml += '</tr>';
+                    tb += '</tr>';
                 }
-                tableHtml += '</table>';
-                formSection.outerHTML = tableHtml;
+                formSect.outerHTML = tb + '</table>';
             }
 
-            // 2. 轉換行程 Day Group 為 Table
+            // 處理行程區塊
             area.querySelectorAll('.day-group').forEach(group => {
-                const headerText = group.querySelector('.day-header').innerText;
+                const head = group.querySelector('.day-header').innerText;
                 const items = group.querySelectorAll('.itinerary-item');
                 const note = group.querySelector('.ipt-note').value;
-                
-                let tableHtml = `<table style="width:100%; border:1px solid #000; margin-bottom:15px; border-collapse:collapse;">
-                    <tr><td colspan="2" style="background-color:#2c3e50; color:#ffffff; padding:10px; font-weight:bold;">${headerText}</td></tr>`;
-                
+                let itb = `<table style="width:100%; border:1px solid #000; border-collapse:collapse; margin-bottom:15px;">
+                    <tr><td colspan="2" style="background-color:#2c3e50; color:#ffffff; padding:10px; font-weight:bold;">${head}</td></tr>`;
                 items.forEach(it => {
-                    const time = it.querySelector('.ipt-time').value;
-                    const content = it.querySelector('textarea').value.replace(/\n/g, '<br>');
-                    tableHtml += `<tr><td style="width:80px; border:1px solid #ddd; padding:8px; font-weight:bold; vertical-align:top;">${time}</td>
-                                  <td style="border:1px solid #ddd; padding:8px; vertical-align:top;">${content}</td></tr>`;
+                    const t = it.querySelector('.ipt-time').value;
+                    const c = it.querySelector('textarea').value.replace(/\n/g, '<br>');
+                    itb += `<tr><td style="width:80px; border:1px solid #ccc; padding:8px; font-weight:bold;">${t}</td><td style="border:1px solid #ccc; padding:8px;">${c}</td></tr>`;
                 });
-                
-                tableHtml += `<tr><td colspan="2" style="background-color:#fffbe6; padding:10px; border:1px solid #ddd;"><b>當日備註：</b><br>${note.replace(/\n/g, '<br>')}</td></tr></table>`;
-                group.outerHTML = tableHtml;
+                itb += `<tr><td colspan="2" style="background-color:#fffbe6; padding:10px; border:1px solid #ccc;"><b>備註：</b><br>${note.replace(/\n/g, '<br>')}</td></tr></table>`;
+                group.outerHTML = itb;
             });
 
-            // 3. 處理剩餘的 input (如標題)
             area.querySelectorAll('input, textarea').forEach(el => {
-                const span = document.createElement('span');
-                span.innerHTML = el.value.replace(/\n/g, '<br>');
-                el.replaceWith(span);
+                const s = document.createElement('span'); s.innerHTML = el.value.replace(/\n/g, '<br>'); el.replaceWith(s);
             });
 
-            const html = `
-                <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-                <head><meta charset="utf-8">
-                <style>
-                    body { font-family: "Microsoft JhengHei", sans-serif; }
-                    table { border-collapse: collapse; width: 100%; margin-bottom: 10px; }
-                    td { font-size: 11pt; padding: 5px; }
-                </style>
-                </head>
-                <body>${area.innerHTML}</body></html>`;
-            
-            const converted = htmlDocx.asBlob(html);
-            saveAs(converted, '行程表.docx');
+            const header = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+                <head><meta charset='utf-8'><style>body{font-family:"Microsoft JhengHei";}</style></head><body>`;
+            const footer = `</body></html>`;
+            const blob = new Blob([header + area.innerHTML + footer], { type: 'application/msword' });
+            saveAs(blob, '行程表.doc'); // 改為 .doc 格式，手機 Word 相容性最好
         }
     </script>
 </body>
