@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>旅遊行程</title>
     
+    <!-- 套件載入 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/evidenceprime/html-docx-js@master/dist/html-docx.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <style>
@@ -29,7 +29,6 @@
 
         body.preview-mode { background-color: #333 !important; }
 
-        /* --- 容器與 PDF 優化 --- */
         .container {
             width: 95%;
             max-width: 210mm;
@@ -41,18 +40,19 @@
             position: relative;
         }
 
-        /* 防止區塊內容被切斷 */
-        .day-group, .cost-table, .form-section {
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-        }
-
-        /* 下載時強制修正樣式 */
+        /* --- PDF 分頁與渲染保護 --- */
         .pdf-calculating {
-            width: 794px !important;
+            width: 794px !important; /* 強制 A4 寬度 */
+            max-width: 794px !important;
             margin: 0 !important;
             padding: 40px !important;
             box-shadow: none !important;
+        }
+
+        /* 防止元件在分頁時被切斷 */
+        .day-group, .cost-table, .form-section {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
         }
 
         .company-header input {
@@ -79,12 +79,12 @@
         .ipt-time { width: 65px; flex-shrink: 0; text-align: center; font-weight: bold; }
         
         .add-act-wrapper { text-align: center; padding: 10px; background: #f9f9f9; border-top: 1px dashed #ccc; }
-        .btn-add { background: #5da5da; color: white; border: none; padding: 10px 20px; border-radius: 20px; font-size: 14px; }
+        .btn-add { background: #5da5da; color: white; border: none; padding: 10px 20px; border-radius: 20px; font-size: 14px; cursor: pointer; }
 
         .note-area { padding: 10px; background: #fffbe6; border-top: 1px solid #eee; }
         .note-label { font-weight: bold; color: #856404; font-size: 10pt; display: block; margin-bottom: 5px; }
 
-        /* 工具列 */
+        /* 置底工具列 */
         .toolbar-fixed {
             position: fixed; bottom: 0; left: 0; width: 100%; background: #ffffff;
             z-index: 10000; box-shadow: 0 -3px 15px rgba(0,0,0,0.3);
@@ -129,7 +129,7 @@
             <tr><th>備註事項</th><td><input type="text" id="ipt_c5" placeholder="注意事項"></td></tr>
         </table>
 
-        <!-- 行程容器 -->
+        <!-- 行程區塊容器 -->
         <div id="itineraryContainer">
             <p style="text-align: center; color: #999; padding: 30px;">請點擊下方「生成」按鈕</p>
         </div>
@@ -156,7 +156,7 @@
             const days = existingData ? existingData.daysCount : document.getElementById('ipt_days').value;
             const start = document.getElementById('ipt_date').value;
             const container = document.getElementById('itineraryContainer');
-            if (!days || days <= 0) return alert("請輸入天數");
+            if (!days || days <= 0) return alert("請輸入有效天數");
             
             container.innerHTML = '';
             let d = start ? new Date(start) : null;
@@ -185,7 +185,7 @@
             return `<div class="itinerary-item">
                 <input type="text" class="ipt-time" value="${time}">
                 <textarea placeholder="行程內容..." rows="1" oninput="autoHeight(this)">${content}</textarea>
-                <button class="no-print" onclick="this.parentElement.remove()" style="border:none; background:none; color:red; font-size:20px; padding:0 5px;">×</button>
+                <button class="no-print" onclick="this.parentElement.remove()" style="border:none; background:none; color:red; font-size:20px;">×</button>
             </div>`;
         }
 
@@ -224,12 +224,12 @@
                 costs: [1,2,3,4,5].map(i => document.getElementById('ipt_c'+i).value),
                 days: days
             };
-            localStorage.setItem('trip_save_final_v2', JSON.stringify(data));
+            localStorage.setItem('trip_save_final_v5', JSON.stringify(data));
             alert("✅ 存檔成功");
         }
 
         function loadData() {
-            const data = JSON.parse(localStorage.getItem('trip_save_final_v2'));
+            const data = JSON.parse(localStorage.getItem('trip_save_final_v5'));
             if(!data) return alert("無存檔紀錄");
             document.getElementById('ipt_agency').value = data.agency || "";
             document.getElementById('ipt_company').value = data.company || "";
@@ -242,63 +242,60 @@
             alert("📂 讀檔完成");
         }
 
-        // --- PDF 下載核心優化 ---
+        // --- PDF 下載核心優化：解決偏位與 Day 1 分頁 ---
         function downloadPDF() {
             const element = document.getElementById('pdfArea');
             
-            // 1. 強制讓視窗回到最頂端，解決截圖位移問題
+            // 1. 強制捲動到頂部，防止截圖座標偏移
             window.scrollTo(0, 0);
-
-            // 2. 進入 PDF 計算模式 (修正寬度)
             element.classList.add('pdf-calculating');
 
-            // 3. 設定分頁規則：強制在 itineraryContainer (Day 1) 之前分頁
-            const opt = {
-                margin: 0,
-                filename: '旅遊行程表.pdf',
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { 
-                    scale: 2, 
-                    useCORS: true, 
-                    windowWidth: 794,
-                    scrollY: 0,
-                    scrollX: 0,
-                    x: 0,
-                    y: 0
-                },
-                // 重點：直接在參數指定 Day 1 之前分頁
-                pagebreak: { 
-                    mode: ['css', 'legacy'], 
-                    before: '#itineraryContainer' 
-                },
-                jsPDF: { unit: 'pt', format: 'a4', orientation: 'portrait' }
-            };
+            setTimeout(() => {
+                const opt = {
+                    margin: 0,
+                    filename: '旅遊行程表.pdf',
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { 
+                        scale: 2, 
+                        useCORS: true, 
+                        windowWidth: 794, // 固定寬度，不隨手機螢幕變動
+                        scrollY: 0,
+                        scrollX: 0
+                    },
+                    // 強制在 itineraryContainer 之前分頁 (即 Day 1 之前)
+                    pagebreak: { 
+                        mode: ['css', 'legacy'], 
+                        before: '#itineraryContainer' 
+                    },
+                    jsPDF: { unit: 'pt', format: 'a4', orientation: 'portrait' }
+                };
 
-            // 4. 產出
-            html2pdf().set(opt).from(element).save().then(() => {
-                element.classList.remove('pdf-calculating');
-            }).catch(err => {
-                element.classList.remove('pdf-calculating');
-                console.error("PDF Error:", err);
-            });
+                html2pdf().set(opt).from(element).save().then(() => {
+                    element.classList.remove('pdf-calculating');
+                }).catch(err => {
+                    element.classList.remove('pdf-calculating');
+                    console.error("PDF Error:", err);
+                });
+            }, 200); 
         }
 
-        // --- Docs 下載 ---
+        // --- Docs 下載核心優化：相容手機版 Google Docs ---
         function downloadWord() {
             const area = document.getElementById('pdfArea').cloneNode(true);
             area.querySelectorAll('.no-print').forEach(n => n.remove());
 
+            // 轉換 input 為純文字，避免 Google Docs 顯示為空框
             const formSect = area.querySelector('.form-section');
             if (formSect) {
                 const gps = formSect.querySelectorAll('.form-group');
-                let tb = '<table style="width:100%; margin-bottom:20px;">';
+                let tb = '<table style="width:100%; border-bottom:1px solid #eee; margin-bottom:20px;">';
                 for(let i=0; i<gps.length; i+=2) {
                     tb += '<tr>';
                     for(let j=0; j<2; j++) {
                         if(gps[i+j]) {
                             const l = gps[i+j].querySelector('label').innerText;
                             const v = gps[i+j].querySelector('input').value;
-                            tb += `<td style="width:18%; font-weight:bold;">${l}</td><td style="width:32%; border-bottom:1px solid #eee;">${v}</td>`;
+                            tb += `<td style="width:18%; font-weight:bold;">${l}</td><td style="width:32%; border-bottom:1px solid #ddd;">${v}</td>`;
                         }
                     }
                     tb += '</tr>';
@@ -306,6 +303,7 @@
                 formSect.outerHTML = tb + '</table>';
             }
 
+            // 轉換 Day Group 為 Table (Google Docs 對 Table 相容性最好)
             area.querySelectorAll('.day-group').forEach(group => {
                 const head = group.querySelector('.day-header').innerText;
                 const items = group.querySelectorAll('.itinerary-item');
@@ -327,9 +325,25 @@
                 el.replaceWith(s);
             });
 
-            const contentHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:"Microsoft JhengHei";}</style></head><body>${area.innerHTML}</body></html>`;
-            const converted = htmlDocx.asBlob(contentHtml);
-            saveAs(converted, '旅遊行程表.docx');
+            // 使用標準 Microsoft Office XML 標頭，增加 Google Docs 識別率
+            const header = `
+                <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+                <head><meta charset="utf-8">
+                <style>
+                    body { font-family: "Microsoft JhengHei", "Heiti TC", sans-serif; line-height: 1.5; }
+                    table { width: 100%; border-collapse: collapse; }
+                    td { vertical-align: top; }
+                </style>
+                </head>
+                <body>
+                    ${area.innerHTML}
+                </body>
+                </html>`;
+
+            // 改回 .doc 格式但設定 MIME 為 msword。
+            // 實測發現手機版 Google Docs 對這種格式的「單一文件 HTML」支援度最高。
+            const blob = new Blob([header], { type: 'application/msword' });
+            saveAs(blob, '旅遊行程表.doc');
         }
     </script>
 </body>
