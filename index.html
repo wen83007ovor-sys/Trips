@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>旅遊公司專用行程表</title>
+    <title>旅遊行程確認單 (最終修復版)</title>
     <style>
         /* --- 全域設定 --- */
         * { box-sizing: border-box; }
 
         :root {
-            --primary-color: #2c3e50; /* 專業深藍色 */
-            --accent-color: #3498db;
+            --primary-color: #2c3e50; /* 專業深藍 */
+            --accent-color: #2980b9;
             --bg-color: #f0f2f5;
             --paper-color: #ffffff;
             --save-color: #e67e22; 
@@ -45,13 +45,14 @@
             margin-bottom: 20px;
         }
         .company-header input {
-            font-size: 18pt;
+            font-size: 20pt;
             font-weight: bold;
             text-align: center;
             border: none;
-            border-bottom: 1px solid #eee;
+            border-bottom: 2px solid #eee;
             margin-bottom: 5px;
             color: var(--primary-color);
+            padding: 10px;
         }
 
         /* 標題風格 */
@@ -62,7 +63,7 @@
             padding-bottom: 15px;
             margin-top: 0;
             margin-bottom: 30px;
-            font-size: 22pt;
+            font-size: 24pt;
             letter-spacing: 2px;
         }
 
@@ -181,27 +182,28 @@
             gap: 10px;
             flex-wrap: wrap;
             box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-            z-index: 999;
+            z-index: 9999;
         }
         
         .btn {
             background-color: var(--accent-color);
             color: white;
             border: none;
-            padding: 10px 20px;
+            padding: 12px 24px; /* 按鈕加大更好按 */
             border-radius: 4px;
             cursor: pointer;
             font-size: 1rem;
             font-weight: bold;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
+        .btn:active { transform: translateY(1px); }
         .btn-danger { background-color: #c0392b; padding: 5px 10px; font-size: 0.9rem; }
         .btn-sm { padding: 5px 10px; font-size: 0.9rem; background-color: rgba(255,255,255,0.2); border: 1px solid #fff; }
         .btn-save { background-color: var(--save-color); }
         .btn-load { background-color: #8e44ad; }
         .btn-gen { background-color: #27ae60; }
 
-        .spacer-bottom { height: 80px; }
+        .spacer-bottom { height: 100px; }
 
         /* --- 列印與 PDF 專用樣式 --- */
         @media print {
@@ -211,6 +213,7 @@
             }
             .toolbar-container, .btn, .no-print, .spacer-bottom { display: none !important; }
             
+            /* 強制移除輸入框外觀，變純文字 */
             input, textarea { 
                 border: none !important; 
                 background: transparent !important; 
@@ -300,19 +303,17 @@
     <script>
         const weekDays = ['(日)', '(一)', '(二)', '(三)', '(四)', '(五)', '(六)'];
 
+        // 自動調整高度：確保文字不被切掉
         function autoResize(el) {
             el.style.height = 'auto';
             el.style.height = el.scrollHeight + 'px';
         }
 
         document.addEventListener('input', function(e) {
-            if(e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
-                e.target.setAttribute('value', e.target.value);
-                if(e.target.tagName === 'TEXTAREA') autoResize(e.target);
-            }
+            if(e.target.tagName === 'TEXTAREA') autoResize(e.target);
         });
 
-        // --- 1. 生成 ---
+        // --- 1. 生成功能 ---
         function generateDays() {
             const daysInput = document.getElementById('ipt_totalDays').value;
             const startDateInput = document.getElementById('ipt_startDate').value;
@@ -400,7 +401,7 @@
 
         function removeItem(btn) { btn.parentElement.remove(); }
 
-        // --- 2. 儲存與讀取 ---
+        // --- 2. 儲存與讀取 (LocalStorage) ---
         function saveData() {
             const data = {
                 agencyName: document.getElementById('ipt_agencyName').value,
@@ -433,19 +434,18 @@
                 data.days.push({ note: note, items: items });
             });
 
-            localStorage.setItem('travelAgencyData_v1', JSON.stringify(data));
-            alert("✅ 進度已暫存！(適合旅行社使用)");
+            localStorage.setItem('travelAgencyData_final', JSON.stringify(data));
+            alert("✅ 進度已暫存！");
         }
 
         function loadData() {
-            const json = localStorage.getItem('travelAgencyData_v1');
+            const json = localStorage.getItem('travelAgencyData_final');
             if (!json) { alert("❌ 找不到暫存資料。"); return; }
             if(!confirm("確定要讀取暫存檔嗎？")) return;
 
             const data = JSON.parse(json);
             
             if(data.agencyName) document.getElementById('ipt_agencyName').value = data.agencyName;
-            
             document.getElementById('ipt_company').value = data.basic.company || "";
             document.getElementById('ipt_contact').value = data.basic.contact || "";
             document.getElementById('ipt_phone').value = data.basic.phone || "";
@@ -458,47 +458,77 @@
             }
 
             renderDays(data.basic.totalDays, data.basic.startDate, data.days);
+            
+            // 延遲執行以確保畫面渲染完成後填入數值
             setTimeout(() => {
-                document.querySelectorAll('textarea').forEach(tx => {
-                    tx.value = tx.value;
-                    autoResize(tx);
+                const savedDays = document.querySelectorAll('.day-container');
+                savedDays.forEach((dayDiv, idx) => {
+                   // 觸發高度調整
+                   const note = dayDiv.querySelector('.ipt-note');
+                   if(note) autoResize(note);
+                   dayDiv.querySelectorAll('.ipt-content').forEach(tx => autoResize(tx));
                 });
             }, 200);
+            
             alert("✅ 讀取成功！");
         }
 
-        // --- 3. 輸出功能 ---
+        // --- 3. 輸出功能 (核心修復) ---
+        
         function printPDF() {
+            // 列印前強制重算所有高度
             document.querySelectorAll('textarea').forEach(tx => autoResize(tx));
             window.print();
         }
 
         function exportWord() {
+            // 1. 複製目前的 DOM
             const clone = document.getElementById('exportContent').cloneNode(true);
+            
+            // 2. 移除不需要的按鈕
             clone.querySelectorAll('.no-print, button').forEach(el => el.remove());
 
-            clone.querySelectorAll('input').forEach(input => {
+            // 3. 【關鍵修復】從原始 DOM 抓取數值，填入複製的 DOM
+            // 這是避免「空白」的最重要步驟
+            const originalInputs = document.getElementById('exportContent').querySelectorAll('input');
+            const clonedInputs = clone.querySelectorAll('input');
+            
+            for (let i = 0; i < clonedInputs.length; i++) {
+                const orig = originalInputs[i];
                 const span = document.createElement('span');
-                span.textContent = input.value;
-                if(input.parentElement.classList.contains('form-group')) {
+                span.textContent = orig.value; // 抓取當下的值
+                
+                // 保留底線樣式
+                if(orig.parentElement.classList.contains('form-group')) {
                     span.style.borderBottom = "1px solid #000";
                     span.style.paddingBottom = "2px";
                 }
-                // 處理最上方的旅行社名稱
-                if(input.id === 'ipt_agencyName') {
-                    span.style.fontSize = "18pt";
+                // 旅行社大標題樣式
+                if(orig.id === 'ipt_agencyName') {
+                    span.style.fontSize = "20pt";
                     span.style.fontWeight = "bold";
                     span.style.color = "#2c3e50";
+                    span.style.display = "block";
+                    span.style.textAlign = "center";
+                    span.style.marginBottom = "20px";
                 }
-                input.replaceWith(span);
-            });
+                
+                clonedInputs[i].replaceWith(span);
+            }
 
-            clone.querySelectorAll('textarea').forEach(textarea => {
+            // 處理 Textarea
+            const originalTextareas = document.getElementById('exportContent').querySelectorAll('textarea');
+            const clonedTextareas = clone.querySelectorAll('textarea');
+
+            for (let i = 0; i < clonedTextareas.length; i++) {
+                const orig = originalTextareas[i];
                 const div = document.createElement('div');
-                div.innerHTML = textarea.value.replace(/\n/g, '<br>');
-                textarea.replaceWith(div);
-            });
+                // 將換行符號轉為 HTML 換行
+                div.innerHTML = orig.value.replace(/\n/g, '<br>');
+                clonedTextareas[i].replaceWith(div);
+            }
 
+            // 4. 產生 Word 檔案
             const htmlContent = `
                 <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
                 <head><meta charset='utf-8'><title>Travel Itinerary</title>
@@ -516,7 +546,9 @@
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
             link.download = '旅遊行程確認單.doc';
+            document.body.appendChild(link);
             link.click();
+            document.body.removeChild(link);
         }
     </script>
 </body>
