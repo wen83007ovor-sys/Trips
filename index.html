@@ -3,99 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>旅遊行程</title>
+    <title>MyTrip 旅遊行程</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
     <style>
+        /* CSS 樣式保持不變，為了版面整潔這裡省略，直接複製您原本 V11 的 style 即可 */
         * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-
-        :root {
-            --primary-color: #2c3e50;
-            --accent-color: #2980b9;
-            --bg-color: #f0f2f5;
-            --paper-color: #ffffff;
-            --input-height: 42px;
-        }
-
-        body {
-            font-family: "Microsoft JhengHei", "Heiti TC", sans-serif;
-            background-color: var(--bg-color);
-            margin: 0; padding: 0;
-            display: flex; flex-direction: column; align-items: center;
-            min-height: 100vh;
-        }
-
+        :root { --primary-color: #2c3e50; --accent-color: #2980b9; --bg-color: #f0f2f5; --paper-color: #ffffff; --input-height: 42px; }
+        body { font-family: "Microsoft JhengHei", "Heiti TC", sans-serif; background-color: var(--bg-color); margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
         body.preview-mode { background-color: #444 !important; }
 
-        .toast-container {
-            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-            z-index: 1000000; pointer-events: none;
-        }
-        .toast-msg {
-            background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(8px); color: white;
-            padding: 12px 25px; border-radius: 50px; font-size: 14px; font-weight: bold;
-            margin-bottom: 10px; opacity: 0; transform: translateY(-20px);
-            transition: all 0.4s; display: flex; align-items: center; white-space: nowrap;
-        }
+        .lang-switch { position: absolute; top: 20px; right: 20px; z-index: 100; display: flex; align-items: center; gap: 10px; }
+        .brand-logo { font-size: 20px; font-weight: 900; color: var(--primary-color); font-family: 'Arial', sans-serif; text-shadow: 1px 1px 0px rgba(255,255,255,0.8); letter-spacing: 1px; cursor: default; }
+        .lang-switch select { padding: 8px 15px; border-radius: 20px; border: 1px solid #ccc; font-size: 14px; background: white; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+
+        .toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1000000; pointer-events: none; }
+        .toast-msg { background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(8px); color: white; padding: 12px 25px; border-radius: 50px; font-size: 14px; font-weight: bold; margin-bottom: 10px; opacity: 0; transform: translateY(-20px); transition: all 0.4s; display: flex; align-items: center; white-space: nowrap; }
         .toast-msg.show { opacity: 1; transform: translateY(0); }
-
-        .container {
-            width: 95%; max-width: 210mm; min-height: 297mm;
-            background: var(--paper-color); padding: 40px; margin: 20px auto 160px auto; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1); position: relative;
-        }
-
-        .company-header input {
-            font-size: 24pt; font-weight: bold; text-align: center; border: none;
-            border-bottom: 2px solid #eee; width: 100%; color: var(--primary-color);
-            background: transparent; margin-bottom: 10px; height: 60px;
-        }
+        .container { width: 95%; max-width: 210mm; min-height: 297mm; background: var(--paper-color); padding: 40px; margin: 20px auto 160px auto; box-shadow: 0 4px 15px rgba(0,0,0,0.1); position: relative; }
+        .company-header input { font-size: 24pt; font-weight: bold; text-align: center; border: none; border-bottom: 2px solid #eee; width: 100%; color: var(--primary-color); background: transparent; margin-bottom: 10px; height: 60px; }
         h1 { text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; font-size: 26pt; margin: 10px 0 25px 0; }
-
-        input, textarea {
-            padding: 8px 12px; border: 1px solid #ddd; border-radius: 8px;
-            font-size: 11pt; background: #fafafa; font-family: inherit;
-        }
-
+        input, textarea { padding: 8px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 11pt; background: #fafafa; font-family: inherit; }
         .form-section { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px 25px; margin-bottom: 30px; }
         .form-group { display: flex; align-items: center; border-bottom: 1px solid #eee; padding: 8px 0; }
-        label { font-size: 11pt; font-weight: bold; width: 90px; flex-shrink: 0; color: #333; }
+        label { font-size: 11pt; font-weight: bold; width: 110px; flex-shrink: 0; color: #333; }
         .form-group input { flex-grow: 1; height: var(--input-height); }
-        
         .cost-table { width: 100%; border-collapse: collapse; margin-bottom: 40px; background: #fff; }
         .cost-table th, .cost-table td { border: 1px solid #000; padding: 0 10px; font-size: 11pt; }
-        .cost-table th { background-color: #f8f9fa; width: 120px; text-align: center; height: 50px; }
+        .cost-table th { background-color: #f8f9fa; width: 140px; text-align: center; height: 50px; }
         .cost-table td input { width: 100%; border: none; background: transparent; height: var(--input-height); }
-
         #itineraryContainer { page-break-before: always; padding-top: 20px; }
-
-        /* 一般模式下的顯示 */
         .day-group { margin-bottom: 30px; border: 1.5px solid #444; border-radius: 8px; overflow: hidden; background: #fff; }
         .day-header { background: var(--primary-color); color: #fff; padding: 15px; font-weight: bold; font-size: 16px; }
         .items-list { padding: 15px; }
-        
-        .itinerary-item { 
-            display: flex; gap: 12px; margin-bottom: 15px; align-items: flex-start; 
-            border-bottom: 1px dotted #ccc; padding-bottom: 10px; 
-        }
+        .itinerary-item { margin-bottom: 15px; border-bottom: 1px dotted #ccc; padding-bottom: 15px; position: relative; }
+        .row-top { display: flex; gap: 12px; width: 100%; align-items: flex-start; }
         .ipt-time { width: 80px; flex-shrink: 0; text-align: center; font-weight: bold; height: var(--input-height); }
         .itinerary-item textarea { flex-grow: 1; resize: none; min-height: var(--input-height); line-height: 1.6; }
         
+        .smart-suggestion-area { margin-top: 8px; margin-left: 92px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+        .suggestion-label { font-size: 12px; font-weight: bold; color: #e67e22; margin-right: 5px; animation: fadeIn 0.5s ease; }
+        .suggestion-btn { background: #fff; color: #0277bd; border: 1px solid #b3e5fc; padding: 4px 12px; border-radius: 15px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.05); animation: fadeIn 0.5s ease; }
+        .suggestion-btn:hover { background: #e1f5fe; border-color: #0277bd; transform: translateY(-1px); }
+
+        .booking-card { margin-top: 10px; margin-left: 92px; border: 1px solid #eee; border-radius: 12px; overflow: hidden; display: flex; background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.08); transition: 0.3s; text-decoration: none; color: inherit; max-width: 500px; position: relative; }
+        .booking-card:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,0.12); }
+        .card-img { width: 120px; height: 120px; object-fit: cover; background: #f0f0f0; }
+        .card-content { padding: 12px 15px; flex-grow: 1; display: flex; flex-direction: column; justify-content: center; min-width: 0; }
+        .card-title { font-weight: bold; font-size: 11pt; margin-bottom: 5px; color: #2c3e50; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .card-desc { font-size: 9pt; color: #7f8c8d; margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .card-footer { display: flex; justify-content: space-between; align-items: center; }
+        .card-price { color: #e67e22; font-weight: bold; font-size: 12pt; }
+        .card-btn { background: #2980b9; color: white; padding: 4px 12px; border-radius: 4px; font-size: 9pt; font-weight: bold; }
+        
+        .card-edit-trigger { position: absolute; top: 5px; right: 5px; background: rgba(255,255,255,0.9); border: 1px solid #ccc; border-radius: 50%; width: 24px; height: 24px; text-align: center; line-height: 22px; font-size: 12px; cursor: pointer; display: none; color: #555; }
+        .booking-card:hover .card-edit-trigger { display: block; }
+
+        .card-editor { margin-top: 5px; margin-left: 92px; padding: 10px; background: #f8f9fa; border: 1px dashed #ccc; border-radius: 8px; display: none; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .card-editor.active { display: grid; }
+        .card-editor input { height: 32px; font-size: 12px; }
+
         .add-act-wrapper { text-align: center; padding: 15px; background: #f9f9f9; border-top: 1px dashed #ccc; }
         .btn-add { background: #5da5da; color: white; border: none; padding: 12px 30px; border-radius: 25px; cursor: pointer; font-weight: bold; font-size: 14px; }
-
         .note-area { padding: 12px 15px; background: #fffbe6; border-top: 1px solid #ddd; }
         .note-label { font-weight: bold; color: #856404; font-size: 11pt; display: block; margin-bottom: 5px; }
         .ipt-note { width: 100%; min-height: 40px; line-height: 1.6; resize: vertical; overflow: hidden; background: #fffef0; }
 
-        .toolbar-fixed {
-            position: fixed; bottom: 0; left: 0; width: 100%; background: #ffffff;
-            z-index: 99999; box-shadow: 0 -5px 25px rgba(0,0,0,0.3);
-            padding: 15px 15px calc(15px + env(safe-area-inset-bottom)); 
-            display: flex; justify-content: center;
-        }
+        .toolbar-fixed { position: fixed; bottom: 0; left: 0; width: 100%; background: #ffffff; z-index: 99999; box-shadow: 0 -5px 25px rgba(0,0,0,0.3); padding: 15px 15px calc(15px + env(safe-area-inset-bottom)); display: flex; justify-content: center; }
         .btn-group { display: flex; gap: 8px; width: 100%; max-width: 900px; }
         .btn { flex: 1; padding: 14px 5px; border-radius: 10px; border: none; font-weight: bold; color: #fff; font-size: 14px; cursor: pointer; transition: 0.2s; }
         .btn-edit-save { background: #e67e22; }
@@ -105,206 +82,337 @@
         .btn-pre-back { background: #7f8c8d; }
         .btn-pre-pdf { background: #c0392b; }
         .btn-pre-word { background: #2980b9; }
-
         .hidden { display: none !important; }
 
-        body.preview-mode .ipt-time, body.preview-mode .itinerary-item textarea,
-        body.preview-mode .ipt-note, body.preview-mode .form-group input,
-        body.preview-mode .cost-table td input { border: none !important; background: transparent !important; padding-left: 0; padding-right: 0; }
-        body.preview-mode .btn-add, body.preview-mode .add-act-wrapper, body.preview-mode .item-del-btn { display: none !important; }
+        body.preview-mode .ipt-time, body.preview-mode .itinerary-item textarea, body.preview-mode .ipt-note, body.preview-mode .form-group input, body.preview-mode .cost-table td input { border: none !important; background: transparent !important; padding-left: 0; padding-right: 0; }
+        body.preview-mode .btn-add, body.preview-mode .add-act-wrapper, body.preview-mode .item-del-btn, body.preview-mode .card-editor, body.preview-mode .smart-suggestion-area, body.preview-mode .card-edit-trigger { display: none !important; }
         body.preview-mode input, body.preview-mode textarea { pointer-events: none; }
-
-        @media (max-width: 600px) {
+        body.preview-mode .booking-card { pointer-events: auto; cursor: pointer; }
+        
+        @media (max-width: 600px) { 
             .container { padding: 15px; margin: 0 auto 120px auto; width: 100%; box-shadow: none; }
-            h1 { font-size: 20pt; }
             .form-section { grid-template-columns: 1fr; } 
-            .form-group { flex-direction: row; align-items: center; border-bottom: 1px solid #f0f0f0; }
-            label { width: 85px; font-size: 10.5pt; }
+            .form-group { flex-direction: row; align-items: center; border-bottom: 1px solid #f0f0f0; } 
+            label { width: 90px; } 
+            .booking-card, .smart-suggestion-area, .card-editor { margin-left: 0; }
+            .lang-switch { position: relative; top: auto; right: auto; width: 100%; justify-content: space-between; padding: 10px 15px; background-color: #fff; border-bottom: 1px solid #eee; }
         }
         @media print { .no-print { display: none !important; } }
-
-        /* --- PDF 渲染專用樣式修正 (極致緊湊版) --- */
-        .pdf-render-fix {
-            width: 800px !important; min-width: 800px !important; max-width: 800px !important;
-            margin: 0 !important; padding: 40px !important; box-shadow: none !important;
-            background: white !important; display: block !important;
-        }
+        
+        .pdf-render-fix { width: 800px !important; min-width: 800px !important; max-width: 800px !important; margin: 0 !important; padding: 40px !important; box-shadow: none !important; background: white !important; display: block !important; }
         .pdf-render-fix .form-section { grid-template-columns: 1fr 1fr !important; display: grid !important; }
         .pdf-render-fix .form-group { flex-direction: row !important; }
-        
-        /* 緊湊化設定：縮小外距與內距 */
-        .pdf-render-fix .itinerary-item { 
-            margin-bottom: 2px !important; 
-            padding-bottom: 2px !important;
-            border-bottom: 1px solid #eee !important;
-            gap: 5px !important;
-            page-break-inside: avoid;
-            min-height: auto !important;
-        }
-        
+        .pdf-render-fix .itinerary-item { margin-bottom: 10px !important; padding-bottom: 10px !important; border-bottom: 1px solid #eee !important; page-break-inside: avoid; }
         .pdf-render-fix .items-list { padding: 5px 10px !important; }
-        .pdf-render-fix .day-header { padding: 8px 10px !important; font-size: 14px !important; page-break-after: avoid; }
-        
-        .pdf-render-fix .day-group {
-            margin-bottom: 10px !important;
-            margin-top: 5px !important;
-            border: 1px solid #444 !important;
-            page-break-inside: auto !important;
-        }
-        
-        /* 緊湊化設定：縮小文字行高 */
-        .pdf-render-fix textarea { 
-            width: 600px !important; flex: none !important; 
-            line-height: 1.15 !important;
-            padding: 0 !important; margin: 0 !important;
-            min-height: auto !important;
-        }
-        .pdf-render-fix .ipt-time {
-            height: auto !important; padding: 0 !important; margin: 0 !important;
-            line-height: 1.15 !important;
-        }
-        
-        .pdf-render-fix .cost-table { width: 100% !important; display: table !important; }
-        .pdf-render-fix .cost-table th, .pdf-render-fix .cost-table td { padding: 4px 8px !important; height: auto !important; }
-        .pdf-render-fix input { height: auto !important; padding: 0 !important; }
+        .pdf-render-fix .day-header { padding: 8px 10px !important; font-size: 14px !important; }
+        .pdf-render-fix .day-group { margin-bottom: 15px !important; border: 1px solid #444 !important; }
+        .pdf-render-fix textarea { width: 600px !important; line-height: 1.2 !important; }
+        .pdf-render-fix .card-editor, .pdf-render-fix .smart-suggestion-area { display: none !important; }
     </style>
 </head>
 <body>
 
+    <div class="lang-switch no-print">
+        <div class="brand-logo">My Trips</div>
+        <select id="langSelect" onchange="changeLang()">
+            <option value="zh-TW">繁體中文</option>
+            <option value="en">English</option>
+        </select>
+    </div>
+
     <div class="toast-container" id="toastContainer"></div>
 
     <div class="container" id="pdfArea">
-        <div class="company-header"><input type="text" id="ipt_agency" placeholder="輸入旅行社名稱"></div>
-        <h1>旅遊行程</h1>
+        <div class="company-header"><input type="text" id="ipt_agency" data-ph="ph_agency" placeholder="輸入旅行社名稱"></div>
+        <h1 data-i18n="title">旅遊行程</h1>
         
         <div class="form-section">
-            <div class="form-group"><label>客戶名稱：</label><input type="text" id="ipt_company"></div>
-            <div class="form-group"><label>聯絡窗口：</label><input type="text" id="ipt_contact"></div>
-            <div class="form-group"><label>聯絡電話：</label><input type="text" id="ipt_phone"></div>
-            <div class="form-group"><label>出發日期：</label><input type="date" id="ipt_date"></div>
-            <div class="form-group"><label>行程天數：</label><input type="number" id="ipt_days" value="3"></div>
+            <div class="form-group"><label data-i18n="client">客戶名稱：</label><input type="text" id="ipt_company"></div>
+            <div class="form-group"><label data-i18n="contact">聯絡窗口：</label><input type="text" id="ipt_contact"></div>
+            <div class="form-group"><label data-i18n="phone">聯絡電話：</label><input type="text" id="ipt_phone"></div>
+            <div class="form-group"><label data-i18n="date">出發日期：</label><input type="date" id="ipt_date"></div>
+            <div class="form-group"><label data-i18n="days">行程天數：</label><input type="number" id="ipt_days" value="3"></div>
         </div>
 
         <table class="cost-table">
-            <tr><th>個人團費</th><td><input type="text" id="ipt_c1" placeholder="$ /人"></td></tr>
-            <tr><th>車資</th><td><input type="text" id="ipt_c2" placeholder="車資說明"></td></tr>
-            <tr><th>餐食</th><td><input type="text" id="ipt_c3" placeholder="早午晚餐說明"></td></tr>
-            <tr><th>住宿</th><td><input type="text" id="ipt_c4" placeholder="飯店名稱與房型"></td></tr>
-            <tr><th>費用包含</th><td><input type="text" id="ipt_c5" placeholder="門票保險等"></td></tr>
-            <tr><th>備註事項</th><td><input type="text" id="ipt_c6" placeholder="集合時間地點"></td></tr>
+            <tr><th data-i18n="c1_label">個人團費</th><td><input type="text" id="ipt_c1" data-ph="c1_ph" placeholder="$ /人"></td></tr>
+            <tr><th data-i18n="c2_label">車資/交通</th><td><input type="text" id="ipt_c2" data-ph="c2_ph" placeholder="車資/交通說明"></td></tr>
+            <tr><th data-i18n="c3_label">餐食</th><td><input type="text" id="ipt_c3" data-ph="c3_ph" placeholder="早午晚餐說明"></td></tr>
+            <tr><th data-i18n="c4_label">住宿</th><td><input type="text" id="ipt_c4" data-ph="c4_ph" placeholder="飯店名稱與房型"></td></tr>
+            <tr><th data-i18n="c5_label">費用包含</th><td><input type="text" id="ipt_c5" data-ph="c5_ph" placeholder="門票保險等"></td></tr>
+            <tr><th data-i18n="c6_label">備註事項</th><td><input type="text" id="ipt_c6" data-ph="c6_ph" placeholder="集合時間地點"></td></tr>
         </table>
 
         <div id="itineraryContainer">
-            <p style="text-align: center; color: #999; padding: 50px;" class="no-print">請點擊下方「1. 行程」</p>
+            <p style="text-align: center; color: #999; padding: 50px;" class="no-print" data-i18n="click_hint">請點擊下方「1. 行程」</p>
         </div>
     </div>
 
     <div class="toolbar-fixed no-print">
         <div id="group-edit" class="btn-group">
-            <button class="btn btn-edit-save" onclick="saveData()">💾存檔</button>
-            <button class="btn btn-edit-load" onclick="loadData()">📂讀檔</button>
-            <button class="btn btn-edit-gen" onclick="buildItinerary()">1.行程</button>
-            <button class="btn btn-edit-preview" onclick="toggleMode(true)">2.預覽</button>
+            <button class="btn btn-edit-save" onclick="saveData()">💾 <span data-i18n="btn_save">存檔</span></button>
+            <button class="btn btn-edit-load" onclick="loadData()">📂 <span data-i18n="btn_load">讀檔</span></button>
+            <button class="btn btn-edit-gen" onclick="buildItinerary()">📝 <span data-i18n="btn_gen">1.行程</span></button>
+            <button class="btn btn-edit-preview" onclick="toggleMode(true)">👁️ <span data-i18n="btn_view">2.預覽</span></button>
         </div>
         <div id="group-preview" class="btn-group hidden">
-            <button class="btn btn-pre-back" onclick="toggleMode(false)">⬅返回編輯</button>
-            <button class="btn btn-pre-pdf" onclick="downloadPDF()">📥下載PDF</button>
-            <button class="btn btn-pre-word" onclick="downloadWord()">📥下載Docs</button>
+            <button class="btn btn-pre-back" onclick="toggleMode(false)">⬅ <span data-i18n="btn_back">返回</span></button>
+            <button class="btn btn-pre-pdf" onclick="downloadPDF()">📥 <span data-i18n="btn_pdf">PDF</span></button>
+            <button class="btn btn-pre-word" onclick="downloadWord()">📥 <span data-i18n="btn_word">Word</span></button>
         </div>
     </div>
 
     <script>
-        function showToast(message) {
-            const container = document.getElementById('toastContainer');
-            const toast = document.createElement('div');
-            toast.className = 'toast-msg';
-            toast.innerHTML = message;
-            container.appendChild(toast);
-            setTimeout(() => toast.classList.add('show'), 100);
-            setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 400); }, 2500);
+        // ================================================================
+        // 🔥 Travelpayouts 設定區 (V12)
+        // ================================================================
+        
+        const AFFILIATE_CONFIG = {
+            tp_marker: "699011", // 您的 Travelpayouts Marker
+            img_gen_url: "https://image.pollinations.ai/prompt/" 
+        };
+
+        // 預設私房推薦 (可選)
+        let affiliateDatabase = [
+            { keywords: "disney,迪士尼", label: "🔥 必去", title: "Tokyo Disney Resort Ticket", price: "$85 up", link: "https://www.klook.com/activity/695-tokyo-disney-resort-1-day-pass-tokyo/", img: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Cinderella_Castle%2C_Tokyo_Disneyland.jpg/320px-Cinderella_Castle%2C_Tokyo_Disneyland.jpg" }
+        ];
+
+        let GOOGLE_SHEET_CSV_URL = ""; 
+
+        // ================================================================
+
+        window.addEventListener('DOMContentLoaded', () => {
+            if(GOOGLE_SHEET_CSV_URL) {
+                Papa.parse(GOOGLE_SHEET_CSV_URL, {
+                    download: true, header: true,
+                    complete: function(results) {
+                        const sheetData = results.data.map(row => ({
+                            keywords: row.Keywords, label: row.Label, title: row.Title,
+                            link: row.Link, img: row.Image, price: row.Price
+                        })).filter(item => item.keywords && item.title);
+                        if(sheetData.length > 0) { affiliateDatabase = sheetData; showToast("✅ 已同步最新資料庫"); }
+                    }
+                });
+            }
+        });
+        
+        const i18n = {
+            "zh-TW": {
+                title: "旅遊行程", client: "客戶名稱：", contact: "聯絡窗口：", phone: "聯絡電話：", date: "出發日期：", days: "行程天數：",
+                c1_label: "個人團費", c2_label: "車資", c3_label: "餐食", c4_label: "住宿", c5_label: "費用包含", c6_label: "備註事項",
+                ph_agency: "輸入旅行社名稱", c1_ph: "$ /人", c2_ph: "車資說明", c3_ph: "早午晚餐說明", c4_ph: "飯店名稱與房型", c5_ph: "門票保險等", c6_ph: "集合時間地點",
+                btn_save: "存檔", btn_load: "讀檔", btn_gen: "1.行程", btn_view: "2.預覽", btn_back: "返回編輯", btn_pdf: "下載PDF", btn_word: "下載Word",
+                click_hint: "請點擊下方「1. 行程」", day_header: "Day", note_label: "當日備註：", add_item: "+ 增加項目",
+                ph_time: "00:00", ph_content: "輸入地名 (如: 大阪, 倫敦) 試試自動搜尋...", 
+                btn_book: "查看價格", card_title_ph: "卡片標題", card_link_ph: "預訂連結", card_img_ph: "圖片網址", card_price_ph: "價格說明",
+                rec_label: "💡 發現推薦：", search_label: "🔍 自動生成搜尋：",
+                btn_search_hotel: '🏨 搜尋 "{city}" 住宿',
+                btn_search_act: '🎡 搜尋 "{city}" 景點',
+                card_hotel_title: '{city} 熱門住宿推薦',
+                card_act_title: '{city} 熱門景點推薦',
+                card_check_price: '查看即時房價/優惠'
+            },
+            "en": {
+                title: "Travel Itinerary", client: "Client:", contact: "Contact:", phone: "Phone:", date: "Start:", days: "Days:",
+                c1_label: "Fee", c2_label: "Transport", c3_label: "Meals", c4_label: "Hotel", c5_label: "Included", c6_label: "Remarks",
+                ph_agency: "Agency Name", c1_ph: "$", c2_ph: "Details", c3_ph: "Details", c4_ph: "Hotel Name", c5_ph: "Items", c6_ph: "Time/Place",
+                btn_save: "Save", btn_load: "Load", btn_gen: "Build", btn_view: "Preview", btn_back: "Edit", btn_pdf: "PDF", btn_word: "Word",
+                click_hint: "Click 'Build' below", day_header: "Day", note_label: "Notes:", add_item: "+ Item",
+                ph_time: "00:00", ph_content: "Type a city (e.g. Osaka, London)...", 
+                btn_book: "Check Prices", card_title_ph: "Title", card_link_ph: "Link", card_img_ph: "Image URL", card_price_ph: "Price",
+                rec_label: "💡 Suggestions:", search_label: "🔍 Auto-Search:",
+                btn_search_hotel: '🏨 Search "{city}" Hotels',
+                btn_search_act: '🎡 Search "{city}" Activities',
+                card_hotel_title: '{city} Hotels & Stays',
+                card_act_title: 'Explore {city} Activities',
+                card_check_price: 'Check Availability'
+            }
+        };
+
+        let currentLang = "zh-TW";
+        function changeLang() { currentLang = document.getElementById('langSelect').value; applyLang(); }
+        function applyLang() {
+            const t = i18n[currentLang];
+            document.querySelectorAll('[data-i18n]').forEach(el => { const key = el.getAttribute('data-i18n'); if(t[key]) el.textContent = t[key]; });
+            document.querySelectorAll('[data-ph]').forEach(el => { const key = el.getAttribute('data-ph'); if(t[key]) el.placeholder = t[key]; });
+            document.querySelectorAll('.day-header').forEach(el => { if(el.dataset.day) el.innerHTML = `${t.day_header} ${el.dataset.day} (${el.dataset.date})`; });
+            document.querySelectorAll('.note-label').forEach(el => el.textContent = t.note_label);
+            document.querySelectorAll('.btn-add').forEach(el => el.textContent = t.add_item);
+            document.querySelectorAll('.ipt-time').forEach(el => el.placeholder = t.ph_time);
+            document.querySelectorAll('.item-content').forEach(el => el.placeholder = t.ph_content);
+            document.querySelectorAll('.card-btn').forEach(el => el.textContent = t.btn_book);
+            document.querySelectorAll('.ipt-c-title').forEach(el => el.placeholder = t.card_title_ph);
+            document.querySelectorAll('.ipt-c-link').forEach(el => el.placeholder = t.card_link_ph);
+            document.querySelectorAll('.ipt-c-img').forEach(el => el.placeholder = t.card_img_ph);
+            document.querySelectorAll('.ipt-c-price').forEach(el => el.placeholder = t.card_price_ph);
         }
 
-        function autoHeight(el) {
-            el.style.height = 'auto';
-            el.style.height = el.scrollHeight + 'px';
-            const minH = 40;
-            // 只有在非 PDF 模式且非預覽模式下才維持最小高度，確保 PDF 時可以壓到最小
-            if(!document.body.classList.contains('preview-mode') && !document.getElementById('pdfArea').classList.contains('pdf-render-fix')) {
-                if(el.classList.contains('ipt-note') && el.scrollHeight < minH) {
-                    el.style.height = minH + 'px';
-                }
-            }
+        function showToast(msg) {
+            const box = document.getElementById('toastContainer');
+            const toast = document.createElement('div'); toast.className = 'toast-msg'; toast.innerHTML = msg;
+            box.appendChild(toast); setTimeout(()=>toast.classList.add('show'),100);
+            setTimeout(()=>{toast.classList.remove('show'); setTimeout(()=>toast.remove(),400)},2500);
         }
+        function autoHeight(el) { el.style.height='auto'; el.style.height=el.scrollHeight+'px'; }
 
         document.addEventListener('input', function(e) {
             if (e.target.classList.contains('ipt-time')) {
                 let val = e.target.value.replace(/\D/g, '');
-                if (val.length >= 3) { e.target.value = val.slice(0, 2) + ':' + val.slice(2, 4); }
+                if (val.length >= 3) e.target.value = val.slice(0, 2) + ':' + val.slice(2, 4);
             }
+            if (e.target.classList.contains('item-content')) detectKeywords(e.target);
+            if (e.target.classList.contains('card-input')) updateCardDisplay(e.target.closest('.itinerary-item'));
         });
 
-        function buildItinerary(existingData = null) {
+        // ==========================================
+        // 🔥 自動偵測邏輯 (Travelpayouts 版)
+        // ==========================================
+        function detectKeywords(textarea) {
+            const val = textarea.value.trim();
+            if(val.length < 2) return; 
+            
+            const parent = textarea.closest('.itinerary-item');
+            if (parent.querySelector('.ipt-c-link').value) return; 
+
+            let suggestArea = parent.querySelector('.smart-suggestion-area');
+            if (!suggestArea) {
+                suggestArea = document.createElement('div');
+                suggestArea.className = 'smart-suggestion-area no-print';
+                parent.appendChild(suggestArea);
+            }
+            suggestArea.innerHTML = ''; 
+            const t = i18n[currentLang];
+            const lowerVal = val.toLowerCase();
+
+            const matchedItems = affiliateDatabase.filter(item => {
+                if(!item.keywords) return false;
+                const keys = item.keywords.toLowerCase().split(',').map(k => k.trim());
+                return keys.some(k => lowerVal.includes(k));
+            });
+
+            if (matchedItems.length > 0) {
+                const label = document.createElement('span'); label.className = 'suggestion-label'; label.textContent = t.rec_label; suggestArea.appendChild(label);
+                matchedItems.slice(0, 3).forEach(item => {
+                    const btn = document.createElement('div'); btn.className = 'suggestion-btn';
+                    btn.innerHTML = `${item.label ? `<strong>${item.label}</strong>` : ''} ${item.title.split('|')[0]}`;
+                    btn.onclick = () => fillCard(parent, item);
+                    suggestArea.appendChild(btn);
+                });
+            } else {
+                const possibleCity = val.split(/[\s,，、]+/).pop(); 
+                if(possibleCity && possibleCity.length > 1) {
+                    const label = document.createElement('span'); label.className = 'suggestion-label'; label.textContent = t.search_label; suggestArea.appendChild(label);
+                    
+                    const btnBooking = document.createElement('div'); btnBooking.className = 'suggestion-btn';
+                    btnBooking.innerHTML = t.btn_search_hotel.replace('{city}', possibleCity);
+                    btnBooking.onclick = () => generateSearchCard(parent, possibleCity, 'booking');
+                    suggestArea.appendChild(btnBooking);
+
+                    const btnKlook = document.createElement('div'); btnKlook.className = 'suggestion-btn';
+                    btnKlook.innerHTML = t.btn_search_act.replace('{city}', possibleCity);
+                    btnKlook.onclick = () => generateSearchCard(parent, possibleCity, 'klook');
+                    suggestArea.appendChild(btnKlook);
+                }
+            }
+        }
+
+        // ==========================================
+        // 🔥 連結生成器 (Travelpayouts Deep Link)
+        // ==========================================
+        function generateSearchCard(itemRow, city, type) {
+            const t = i18n[currentLang];
+            let link = "", title = "", price = "";
+            const randomSeed = Math.floor(Math.random() * 1000); 
+            const imgUrl = `${AFFILIATE_CONFIG.img_gen_url}${encodeURIComponent(city + " travel landmark scenery realistic")}&seed=${randomSeed}`;
+            const marker = AFFILIATE_CONFIG.tp_marker;
+
+            if(type === 'booking') {
+                title = t.card_hotel_title.replace('{city}', city);
+                // Booking.com via Travelpayouts (AID=304142 是 TP 公用 ID, label 放您的 Marker)
+                link = `https://www.booking.com/searchresults.html?ss=${encodeURIComponent(city)}&aid=304142&label=up_${marker}`;
+                price = t.card_check_price;
+            } else if(type === 'klook') {
+                title = t.card_act_title.replace('{city}', city);
+                // Klook via Travelpayouts Deep Link
+                link = `https://c123.travelpayouts.com/click?shmarker=${marker}&promo_id=1584&source_type=link&type=click&custom_url=${encodeURIComponent('https://www.klook.com/search?query=' + city)}`;
+                price = t.card_check_price;
+            }
+            fillCard(itemRow, { title: title, link: link, img: imgUrl, price: price });
+        }
+
+        function fillCard(itemRow, data) {
+            itemRow.querySelector('.ipt-c-title').value = data.title;
+            itemRow.querySelector('.ipt-c-link').value = data.link;
+            itemRow.querySelector('.ipt-c-img').value = data.img;
+            itemRow.querySelector('.ipt-c-price').value = data.price;
+            updateCardDisplay(itemRow);
+            itemRow.querySelector('.smart-suggestion-area').innerHTML = ''; 
+        }
+
+        function updateCardDisplay(itemRow) {
+            const title = itemRow.querySelector('.ipt-c-title').value;
+            const link = itemRow.querySelector('.ipt-c-link').value;
+            const img = itemRow.querySelector('.ipt-c-img').value;
+            const price = itemRow.querySelector('.ipt-c-price').value;
+            const card = itemRow.querySelector('.booking-card');
+
+            if (title || link) {
+                card.style.display = 'flex';
+                card.href = link || '#';
+                card.target = "_blank"; 
+                card.querySelector('.card-title').textContent = title || 'No Title';
+                card.querySelector('.card-desc').textContent = link;
+                card.querySelector('.card-price').textContent = price;
+                const imgEl = card.querySelector('.card-img');
+                if (img) { imgEl.src = img; imgEl.style.display = 'block'; } 
+                else { imgEl.style.display = 'none'; }
+            } else {
+                card.style.display = 'none';
+            }
+        }
+
+        function buildItinerary(existingData=null) {
             const days = existingData ? existingData.daysCount : document.getElementById('ipt_days').value;
             const start = document.getElementById('ipt_date').value;
             const container = document.getElementById('itineraryContainer');
-            if (!days || days <= 0) return alert("請輸入有效天數");
-            
             container.innerHTML = '';
             let d = start ? new Date(start) : null;
+            const t = i18n[currentLang];
+
             for(let i=1; i<=days; i++) {
                 let dateStr = d ? `${d.getMonth()+1}/${d.getDate()}` : `Day ${i}`;
                 if(d) d.setDate(d.getDate()+1);
-                
                 let itemsHtml = (existingData && existingData.days[i-1]) 
-                    ? existingData.days[i-1].items.map(item => createItemRow(item.time, item.content)).join('')
-                    : createItemRow("", "");
-                
+                    ? existingData.days[i-1].items.map(item => createItemRow(item)).join('')
+                    : createItemRow({});
                 const noteVal = (existingData && existingData.days[i-1]) ? existingData.days[i-1].note : "";
-                const group = document.createElement('div');
-                group.className = 'day-group';
-                group.innerHTML = `
-                    <div class="day-header">Day ${i} (${dateStr})</div>
-                    <div class="items-list">${itemsHtml}</div>
-                    <div class="add-act-wrapper"><button class="btn-add" onclick="addAct(this)">+ 增加項目</button></div>
-                    <div class="note-area"><span class="note-label">當日備註：</span><textarea class="ipt-note" oninput="autoHeight(this)">${noteVal}</textarea></div>`;
+                const group = document.createElement('div'); group.className = 'day-group';
+                group.innerHTML = `<div class="day-header" data-day="${i}" data-date="${dateStr}">${t.day_header} ${i} (${dateStr})</div><div class="items-list">${itemsHtml}</div><div class="add-act-wrapper"><button class="btn-add" onclick="addAct(this)">${t.add_item}</button></div><div class="note-area"><span class="note-label">${t.note_label}</span><textarea class="ipt-note" oninput="autoHeight(this)">${noteVal}</textarea></div>`;
                 container.appendChild(group);
             }
             document.querySelectorAll('textarea').forEach(t => autoHeight(t));
+            document.querySelectorAll('.itinerary-item').forEach(item => updateCardDisplay(item));
         }
 
-        function createItemRow(time, content) {
-            return `<div class="itinerary-item">
-                <input type="text" class="ipt-time" value="${time}" placeholder="00:00" maxlength="5">
-                <textarea placeholder="內容描述..." rows="1" oninput="autoHeight(this)">${content}</textarea>
-                <button class="item-del-btn no-print" onclick="this.parentElement.remove()" style="border:none; background:none; color:#e74c3c; font-weight:bold; cursor:pointer; font-size:24px; padding:0 5px;">×</button>
-            </div>`;
+        function createItemRow(data) {
+            const t = i18n[currentLang];
+            const { time="", content="", cTitle="", cLink="", cImg="", cPrice="" } = data;
+            return `<div class="itinerary-item"><div class="row-top"><input type="text" class="ipt-time" value="${time}" placeholder="${t.ph_time}" maxlength="5"><textarea class="item-content" placeholder="${t.ph_content}" rows="1" oninput="autoHeight(this)">${content}</textarea><button class="item-del-btn no-print" onclick="this.closest('.itinerary-item').remove()" style="border:none; background:none; color:#e74c3c; font-weight:bold; cursor:pointer; font-size:24px; padding:0 5px;">×</button></div><a href="${cLink}" target="_blank" class="booking-card" style="display:none;"><img src="${cImg}" class="card-img" onerror="this.style.display='none'"><div class="card-content"><div class="card-title">${cTitle}</div><div class="card-desc">${cLink}</div><div class="card-footer"><span class="card-price">${cPrice}</span><span class="card-btn">${t.btn_book}</span></div></div><div class="card-edit-trigger no-print" onclick="event.preventDefault(); event.stopPropagation(); toggleCardEditor(this)">✎</div></a><div class="card-editor"><input type="text" class="card-input ipt-c-title" value="${cTitle}" placeholder="${t.card_title_ph}"><input type="text" class="card-input ipt-c-price" value="${cPrice}" placeholder="${t.card_price_ph}"><input type="text" class="card-input ipt-c-link" value="${cLink}" placeholder="${t.card_link_ph}" style="grid-column: span 2;"><input type="text" class="card-input ipt-c-img" value="${cImg}" placeholder="${t.card_img_ph}" style="grid-column: span 2;"></div></div>`;
         }
 
-        function addAct(btn) {
-            const list = btn.closest('.day-group').querySelector('.items-list');
-            const div = document.createElement('div');
-            div.innerHTML = createItemRow("", "");
-            list.appendChild(div.firstElementChild);
-        }
-
+        function toggleCardEditor(btn) { btn.closest('.itinerary-item').querySelector('.card-editor').classList.toggle('active'); }
+        function addAct(btn) { btn.closest('.day-group').querySelector('.items-list').appendChild(document.createElement('div')).outerHTML = createItemRow({}); }
+        
         function toggleMode(isPreview) {
             document.body.classList.toggle('preview-mode', isPreview);
             document.getElementById('group-edit').classList.toggle('hidden', isPreview);
             document.getElementById('group-preview').classList.toggle('hidden', !isPreview);
-            
             document.querySelectorAll('.day-group').forEach(group => {
                 const noteInput = group.querySelector('.ipt-note');
-                const noteArea = group.querySelector('.note-area');
-                if (isPreview && noteInput.value.trim() === "") {
-                    noteArea.style.display = 'none';
-                } else {
-                    noteArea.style.display = 'block';
-                }
+                group.querySelector('.note-area').style.display = (isPreview && noteInput.value.trim() === "") ? 'none' : 'block';
             });
-
-            document.querySelectorAll('input, textarea').forEach(el => el.readOnly = isPreview);
-            window.scrollTo(0, 0);
-            if(isPreview) { document.querySelectorAll('textarea').forEach(t => autoHeight(t)); }
+            document.querySelectorAll('input, textarea').forEach(el => { if(!el.classList.contains('ipt-c-link')) el.readOnly = isPreview; });
+            if(isPreview) document.querySelectorAll('textarea').forEach(t => autoHeight(t));
         }
 
         function saveData() {
@@ -312,133 +420,73 @@
             document.querySelectorAll('.day-group').forEach(group => {
                 const items = [];
                 group.querySelectorAll('.itinerary-item').forEach(it => {
-                    items.push({ time: it.querySelector('.ipt-time').value, content: it.querySelector('textarea').value });
+                    items.push({ 
+                        time: it.querySelector('.ipt-time').value, content: it.querySelector('.item-content').value,
+                        cTitle: it.querySelector('.ipt-c-title').value, cLink: it.querySelector('.ipt-c-link').value,
+                        cImg: it.querySelector('.ipt-c-img').value, cPrice: it.querySelector('.ipt-c-price').value
+                    });
                 });
                 days.push({ items: items, note: group.querySelector('.ipt-note').value });
             });
             const data = {
-                agency: document.getElementById('ipt_agency').value,
-                company: document.getElementById('ipt_company').value,
-                contact: document.getElementById('ipt_contact').value,
-                phone: document.getElementById('ipt_phone').value,
-                date: document.getElementById('ipt_date').value,
-                daysCount: document.getElementById('ipt_days').value,
-                costs: [1,2,3,4,5,6].map(i => document.getElementById('ipt_c'+i).value),
-                days: days
+                lang: currentLang,
+                agency: document.getElementById('ipt_agency').value, company: document.getElementById('ipt_company').value,
+                contact: document.getElementById('ipt_contact').value, phone: document.getElementById('ipt_phone').value,
+                date: document.getElementById('ipt_date').value, daysCount: document.getElementById('ipt_days').value,
+                costs: [1,2,3,4,5,6].map(i => document.getElementById('ipt_c'+i).value), days: days
             };
-            localStorage.setItem('trip_v3_data', JSON.stringify(data));
-            showToast("✅ 存檔成功");
+            localStorage.setItem('trip_v12_data', JSON.stringify(data));
+            showToast("✅ Saved");
         }
-
         function loadData() {
-            const data = JSON.parse(localStorage.getItem('trip_v3_data'));
-            if(!data) return alert("無紀錄");
-            document.getElementById('ipt_agency').value = data.agency || "";
-            document.getElementById('ipt_company').value = data.company || "";
-            document.getElementById('ipt_contact').value = data.contact || "";
-            document.getElementById('ipt_phone').value = data.phone || "";
-            document.getElementById('ipt_date').value = data.date || "";
-            document.getElementById('ipt_days').value = data.daysCount || 3;
+            const data = JSON.parse(localStorage.getItem('trip_v12_data'));
+            if(!data) return alert("No records");
+            if(data.lang) { document.getElementById('langSelect').value = data.lang; changeLang(); }
+            document.getElementById('ipt_agency').value = data.agency||""; document.getElementById('ipt_company').value = data.company||"";
+            document.getElementById('ipt_contact').value = data.contact||""; document.getElementById('ipt_phone').value = data.phone||"";
+            document.getElementById('ipt_date').value = data.date||""; document.getElementById('ipt_days').value = data.daysCount||3;
             data.costs.forEach((v, i) => { if(document.getElementById('ipt_c'+(i+1))) document.getElementById('ipt_c'+(i+1)).value = v; });
-            buildItinerary(data);
-            showToast("📂 讀檔成功");
+            buildItinerary(data); showToast("📂 Loaded");
         }
-
         function downloadPDF() {
             const element = document.getElementById('pdfArea');
-            const originalScrollY = window.scrollY;
-            window.scrollTo(0, 0);
-            
-            // 加入 PDF 專用 CSS 類別，縮小間距
+            const originalScrollY = window.scrollY; window.scrollTo(0, 0);
             element.classList.add('pdf-render-fix');
-
-            // ★重點：強制重新計算高度，讓縮小的 line-height 生效，格子變矮
             document.querySelectorAll('textarea').forEach(t => autoHeight(t));
-
             setTimeout(() => {
-                const opt = {
-                    margin: 0, 
-                    filename: '旅遊行程表.pdf',
-                    image: { type: 'jpeg', quality: 0.98 },
-                    html2canvas: { 
-                        scale: 2, 
-                        useCORS: true, 
-                        windowWidth: 800,
-                        width: 800,
-                        scrollX: 0, scrollY: 0, x: 0, y: 0
-                    },
-                    pagebreak: { mode: ['css', 'legacy'] }, 
-                    jsPDF: { unit: 'pt', format: 'a4', orientation: 'portrait' }
-                };
-
-                html2pdf().set(opt).from(element).save().then(() => {
-                    element.classList.remove('pdf-render-fix');
-                    // 恢復正常顯示高度
-                    document.querySelectorAll('textarea').forEach(t => autoHeight(t));
-                    window.scrollTo(0, originalScrollY);
-                }).catch(err => {
-                    element.classList.remove('pdf-render-fix');
-                });
+                html2pdf().set({ margin: 0, filename: `Itinerary.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true, width: 800 }, jsPDF: { unit: 'pt', format: 'a4' } }).from(element).save()
+                .then(() => { element.classList.remove('pdf-render-fix'); document.querySelectorAll('textarea').forEach(t => autoHeight(t)); window.scrollTo(0, originalScrollY); });
             }, 100);
         }
-
         function downloadWord() {
-            const agency = document.getElementById('ipt_agency').value;
-            const company = document.getElementById('ipt_company').value;
-            const contact = document.getElementById('ipt_contact').value;
-            const phone = document.getElementById('ipt_phone').value;
-            const date = document.getElementById('ipt_date').value;
-            const daysCount = document.getElementById('ipt_days').value;
-
-            let htmlString = `
-                <div style="width: 100%; font-family: 'Microsoft JhengHei', sans-serif;">
-                    <p style="text-align: center; font-size: 20pt; font-weight: bold; color: #2c3e50; margin-bottom: 5pt;">${agency}</p>
-                    <p style="text-align: center; font-size: 26pt; font-weight: bold; border-bottom: 2pt double black; padding-bottom: 10pt; margin-top: 0;">旅遊行程表</p>
-                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20pt;">
-                        <tr><td style="width: 15%; font-weight: bold; padding: 8pt 0;">客戶名稱：</td><td style="width: 35%; border-bottom: 1pt solid #ccc;">${company}</td><td style="width: 15%; font-weight: bold; padding: 8pt 0; padding-left: 20pt;">聯絡窗口：</td><td style="width: 35%; border-bottom: 1pt solid #ccc;">${contact}</td></tr>
-                        <tr><td style="font-weight: bold; padding: 8pt 0;">聯絡電話：</td><td style="border-bottom: 1pt solid #ccc;">${phone}</td><td style="font-weight: bold; padding: 8pt 0; padding-left: 20pt;">出發日期：</td><td style="border-bottom: 1pt solid #ccc;">${date}</td></tr>
-                        <tr><td style="font-weight: bold; padding: 8pt 0;">行程天數：</td><td style="border-bottom: 1pt solid #ccc;">${daysCount} 天</td><td></td><td></td></tr>
-                    </table>
-                    <p style="font-size: 14pt; font-weight: bold; color: #2c3e50; margin-bottom: 10pt;">■ 費用明細</p>
-                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20pt; border: 1pt solid black;">
-            `;
-
-            const costLabels = ["個人團費", "車資", "餐食", "住宿", "費用包含", "備註事項"];
-            for (let i = 1; i <= 6; i++) {
-                const val = document.getElementById('ipt_c' + i).value;
-                htmlString += `<tr><td style="width: 20%; background-color: #f8f9fa; border: 1pt solid black; padding: 10pt; font-weight: bold; text-align: center;">${costLabels[i - 1]}</td><td style="width: 80%; border: 1pt solid black; padding: 10pt;">${val.replace(/\n/g, '<br>')}</td></tr>`;
-            }
-            htmlString += `</table><br clear="all" style="page-break-before: always;"><p style="font-size: 14pt; font-weight: bold; color: #2c3e50; margin-bottom: 10pt;">■ 詳細行程規劃</p>`;
+            const t = i18n[currentLang];
+            let html = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word'><head><meta charset="utf-8"><style>body{font-family:"Microsoft JhengHei";}table{border-collapse:collapse;width:100%;}</style></head><body>`;
+            html += `<p style="text-align:center;font-size:20pt;font-weight:bold;">${document.getElementById('ipt_agency').value}</p><p style="text-align:center;font-size:24pt;font-weight:bold;border-bottom:2px double #000;">${t.title}</p>`;
             
-            document.querySelectorAll('.day-group').forEach((group) => {
-                const head = group.querySelector('.day-header').innerText;
-                const note = group.querySelector('.ipt-note').value;
-                htmlString += `<table style="width: 100%; border-collapse: collapse; margin-bottom: 25pt; border: 1.5pt solid #2c3e50;"><tr style="background-color: #2c3e50;"><td colspan="2" style="padding: 10pt; color: #ffffff; font-weight: bold; font-size: 12pt;">${head}</td></tr>`;
+            html += `<table><tr><td style="font-weight:bold;">${t.client}</td><td>${document.getElementById('ipt_company').value}</td><td style="font-weight:bold;">${t.contact}</td><td>${document.getElementById('ipt_contact').value}</td></tr>`;
+            html += `<tr><td style="font-weight:bold;">${t.phone}</td><td>${document.getElementById('ipt_phone').value}</td><td style="font-weight:bold;">${t.date}</td><td>${document.getElementById('ipt_date').value}</td></tr></table><br>`;
+            
+            document.querySelectorAll('.day-group').forEach(group => {
+                html += `<table style="border:1.5pt solid #2c3e50;margin-bottom:20px;"><tr style="background:#2c3e50;color:#fff;"><td colspan="2" style="padding:10px;font-weight:bold;">${group.querySelector('.day-header').innerText}</td></tr>`;
                 group.querySelectorAll('.itinerary-item').forEach(it => {
-                    const time = it.querySelector('.ipt-time').value;
-                    const content = it.querySelector('textarea').value.replace(/\n/g, '<br>');
-                    htmlString += `<tr><td style="width: 80pt; border: 0.5pt solid #eee; padding: 10pt; text-align: center; font-weight: bold; vertical-align: top; background-color: #fcfcfc;">${time}</td><td style="border: 0.5pt solid #eee; padding: 10pt; vertical-align: top; line-height: 1.6;">${content}</td></tr>`;
+                    let content = it.querySelector('.item-content').value.replace(/\n/g, '<br>');
+                    const cTitle = it.querySelector('.ipt-c-title').value, cLink = it.querySelector('.ipt-c-link').value;
+                    const cImg = it.querySelector('.ipt-c-img').value, cPrice = it.querySelector('.ipt-c-price').value;
+                    
+                    if(cLink) { 
+                        content += `<br><br><table style="border:1pt solid #ddd;background:#fafafa;"><tr>`;
+                        if(cImg) content += `<td style="width:120px;padding:5px;"><img src="${cImg}" width="100" height="80"></td>`;
+                        content += `<td style="padding:5px;"><div style="font-weight:bold;font-size:12pt;color:#2c3e50;">${cTitle}</div><div style="color:#e67e22;font-weight:bold;">${cPrice}</div><a href="${cLink}" style="color:#2980b9;text-decoration:underline;">${t.btn_book} &gt;</a></td></tr></table>`;
+                    }
+                    html += `<tr><td style="width:80px;padding:10px;border:1px solid #eee;text-align:center;font-weight:bold;vertical-align:top;">${it.querySelector('.ipt-time').value}</td><td style="padding:10px;border:1px solid #eee;">${content}</td></tr>`;
                 });
-
-                if (note.trim() !== "") {
-                    htmlString += `<tr><td colspan="2" style="background-color: #fffbe6; padding: 10pt; border-top: 1pt solid #ddd;"><span style="color: #d35400; font-weight: bold;">當日備註：</span><br><span style="color: #555;">${note.replace(/\n/g, '<br>')}</span></td></tr>`;
-                }
-                htmlString += `</table>`;
+                const note = group.querySelector('.ipt-note').value;
+                if(note) html += `<tr><td colspan="2" style="background:#fffbe6;padding:10px;color:#555;"><strong>${t.note_label}</strong><br>${note.replace(/\n/g, '<br>')}</td></tr>`;
+                html += `</table>`;
             });
-
-            const header = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset="utf-8"><style>body { font-family: "Microsoft JhengHei"; } table { border-spacing: 0; }</style></head><body>${htmlString}</body></html>`;
-            const blob = new Blob([header], { type: 'application/msword' });
-            saveAs(blob, '旅遊行程表_' + company + '.doc');
+            html += `</body></html>`;
+            saveAs(new Blob([html], {type:'application/msword'}), 'Itinerary.doc');
         }
     </script>
-
-    <script data-noptimize="1" data-cfasync="false" data-wpfc-render="false">
-  (function () {
-      var script = document.createElement("script");
-      script.async = 1;
-      script.src = 'https://emrldtp.com/NDkyNTA1.js?t=492505';
-      document.head.appendChild(script);
-  })();
-</script>
 </body>
 </html>
