@@ -122,7 +122,6 @@
         .pdf-render-fix textarea { width: 600px !important; line-height: 1.2 !important; }
         .pdf-render-fix .card-editor, .pdf-render-fix .smart-suggestion-area { display: none !important; }
         
-        /* 🔥 V16 重點：PDF 下載時隱藏卡片圖片 */
         .pdf-render-fix .card-img { display: none !important; }
     </style>
 </head>
@@ -184,10 +183,10 @@
             img_gen_url: "https://image.pollinations.ai/prompt/" 
         };
 
-        // 預設資料 (Google Sheet 已移除，此為備用空結構)
+        // 預設資料
         let affiliateDatabase = [];
 
-        // ✅ 已確認 Google Sheet 連結為空，確保不載入外部資料
+        // Google Sheet 網址留空，確保不載入
         let GOOGLE_SHEET_CSV_URL = ""; 
 
         window.addEventListener('DOMContentLoaded', () => {
@@ -486,18 +485,18 @@
                 date: document.getElementById('ipt_date').value, daysCount: document.getElementById('ipt_days').value,
                 costs: [1,2,3,4,5,6].map(i => document.getElementById('ipt_c'+i).value), days: days
             };
-            localStorage.setItem('trip_v16_data', JSON.stringify(data));
-            showToast("✅ Saved");
+            localStorage.setItem('trip_v17_data', JSON.stringify(data));
+            showToast(currentLang === 'zh-TW' ? "✅ 存檔成功" : "✅ Saved");
         }
         function loadData() {
-            const data = JSON.parse(localStorage.getItem('trip_v16_data'));
-            if(!data) return alert("No records");
+            const data = JSON.parse(localStorage.getItem('trip_v17_data'));
+            if(!data) return alert(currentLang === 'zh-TW' ? "⚠️ 找不到存檔紀錄" : "⚠️ No records found");
             if(data.lang) { document.getElementById('langSelect').value = data.lang; changeLang(); }
             document.getElementById('ipt_agency').value = data.agency||""; document.getElementById('ipt_company').value = data.company||"";
             document.getElementById('ipt_contact').value = data.contact||""; document.getElementById('ipt_phone').value = data.phone||"";
             document.getElementById('ipt_date').value = data.date||""; document.getElementById('ipt_days').value = data.daysCount||3;
             data.costs.forEach((v, i) => { if(document.getElementById('ipt_c'+(i+1))) document.getElementById('ipt_c'+(i+1)).value = v; });
-            buildItinerary(data); showToast("📂 Loaded");
+            buildItinerary(data); showToast(currentLang === 'zh-TW' ? "📂 讀檔成功" : "📂 Loaded");
         }
         function downloadPDF() {
             const element = document.getElementById('pdfArea');
