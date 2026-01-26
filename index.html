@@ -15,7 +15,6 @@
         body { font-family: "Microsoft JhengHei", "Heiti TC", sans-serif; background-color: var(--bg-color); margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
         body.preview-mode { background-color: #444 !important; }
 
-        /* V14: 歐式導覽列 */
         .lang-switch { 
             position: relative; width: 95%; max-width: 210mm; margin: 0 auto; 
             padding: 20px 0; display: flex; justify-content: space-between; 
@@ -78,9 +77,7 @@
         .card-price { color: #e67e22; font-weight: bold; font-size: 12pt; }
         .card-btn { background: #2980b9; color: white; padding: 4px 12px; border-radius: 4px; font-size: 9pt; font-weight: bold; }
         
-        /* 隱藏的資料欄位 (不顯示小鉛筆，但欄位需存在以存取資料) */
         .card-editor { display: none; } 
-        .card-editor.active { display: grid; } /* 雖然保留class邏輯，但不再有按鈕觸發它 */
 
         .add-act-wrapper { text-align: center; padding: 15px; background: #f9f9f9; border-top: 1px dashed #ccc; }
         .btn-add { background: #5da5da; color: white; border: none; padding: 12px 30px; border-radius: 25px; cursor: pointer; font-weight: bold; font-size: 14px; }
@@ -111,11 +108,7 @@
             .form-group { flex-direction: row; align-items: center; border-bottom: 1px solid #f0f0f0; } 
             label { width: 90px; } 
             .booking-card, .smart-suggestion-area, .card-editor { margin-left: 0; }
-            
-            .lang-switch {
-                width: 100%; max-width: 100%; justify-content: space-between; 
-                padding: 10px 15px; background-color: #fff; border-bottom: 1px solid #eee;
-            }
+            .lang-switch { width: 100%; max-width: 100%; justify-content: space-between; padding: 10px 15px; background-color: #fff; border-bottom: 1px solid #eee; }
         }
         @media print { .no-print { display: none !important; } }
         
@@ -128,12 +121,15 @@
         .pdf-render-fix .day-group { margin-bottom: 15px !important; border: 1px solid #444 !important; }
         .pdf-render-fix textarea { width: 600px !important; line-height: 1.2 !important; }
         .pdf-render-fix .card-editor, .pdf-render-fix .smart-suggestion-area { display: none !important; }
+        
+        /* 🔥 V16 重點：PDF 下載時隱藏卡片圖片 */
+        .pdf-render-fix .card-img { display: none !important; }
     </style>
 </head>
 <body>
 
     <div class="lang-switch no-print">
-        <div class="brand-logo">My Trip</div>
+        <div class="brand-logo">My Trips</div>
         <select id="langSelect" onchange="changeLang()">
             <option value="zh-TW">繁體中文</option>
             <option value="en">English</option>
@@ -184,14 +180,14 @@
 
     <script>
         const AFFILIATE_CONFIG = {
-            tp_marker: "699011", // Travelpayouts Marker
+            tp_marker: "699011", 
             img_gen_url: "https://image.pollinations.ai/prompt/" 
         };
 
-        let affiliateDatabase = [
-            { keywords: "disney,迪士尼", label: "🔥 必去", title: "Tokyo Disney Resort Ticket", price: "$85 up", link: "https://www.klook.com/activity/695-tokyo-disney-resort-1-day-pass-tokyo/", img: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Cinderella_Castle%2C_Tokyo_Disneyland.jpg/320px-Cinderella_Castle%2C_Tokyo_Disneyland.jpg" }
-        ];
+        // 預設資料 (Google Sheet 已移除，此為備用空結構)
+        let affiliateDatabase = [];
 
+        // ✅ 已確認 Google Sheet 連結為空，確保不載入外部資料
         let GOOGLE_SHEET_CSV_URL = ""; 
 
         window.addEventListener('DOMContentLoaded', () => {
@@ -273,17 +269,38 @@
                 let val = e.target.value.replace(/\D/g, '');
                 if (val.length >= 3) e.target.value = val.slice(0, 2) + ':' + val.slice(2, 4);
             }
-            if (e.target.classList.contains('item-content')) detectKeywords(e.target);
+            
+            // 🔥 V16 關鍵邏輯：只要修改文字，就清除卡片 + 觸發新搜尋
+            if (e.target.classList.contains('item-content')) {
+                const parent = e.target.closest('.itinerary-item');
+                // 1. 強制清空目前卡片內容 (讓舊卡片消失)
+                parent.querySelector('.ipt-c-title').value = "";
+                parent.querySelector('.ipt-c-link').value = "";
+                parent.querySelector('.ipt-c-img').value = "";
+                parent.querySelector('.ipt-c-price').value = "";
+                
+                // 2. 觸發顯示更新 (UI 上卡片會隱藏)
+                updateCardDisplay(parent);
+                
+                // 3. 重新偵測關鍵字 (顯示下方的搜尋按鈕)
+                detectKeywords(e.target);
+            }
+            
             if (e.target.classList.contains('card-input')) updateCardDisplay(e.target.closest('.itinerary-item'));
         });
 
-        // 🔥 V14 關鍵修正：移除了「如果已有連結就擋住偵測」的判斷式
+        // ==========================================
+        // 🔥 自動偵測邏輯
+        // ==========================================
         function detectKeywords(textarea) {
             const val = textarea.value.trim();
             if(val.length < 2) return; 
             
             const parent = textarea.closest('.itinerary-item');
             
+            // 如果卡片連結是空的(剛被清掉或本來就沒有)，才顯示搜尋建議
+            if (parent.querySelector('.ipt-c-link').value) return;
+
             let suggestArea = parent.querySelector('.smart-suggestion-area');
             if (!suggestArea) {
                 suggestArea = document.createElement('div');
@@ -326,6 +343,9 @@
             }
         }
 
+        // ==========================================
+        // 🔥 連結生成器
+        // ==========================================
         function generateSearchCard(itemRow, city, type) {
             const t = i18n[currentLang];
             let link = "", title = "", price = "";
@@ -381,7 +401,11 @@
             const start = document.getElementById('ipt_date').value;
             const container = document.getElementById('itineraryContainer');
             container.innerHTML = '';
-            let d = start ? new Date(start) : null;
+            let d = null;
+            if (start) {
+                const parts = start.split('-');
+                d = new Date(parts[0], parts[1] - 1, parts[2]); 
+            }
             const t = i18n[currentLang];
 
             for(let i=1; i<=days; i++) {
@@ -462,11 +486,11 @@
                 date: document.getElementById('ipt_date').value, daysCount: document.getElementById('ipt_days').value,
                 costs: [1,2,3,4,5,6].map(i => document.getElementById('ipt_c'+i).value), days: days
             };
-            localStorage.setItem('trip_v14_data', JSON.stringify(data));
+            localStorage.setItem('trip_v16_data', JSON.stringify(data));
             showToast("✅ Saved");
         }
         function loadData() {
-            const data = JSON.parse(localStorage.getItem('trip_v14_data'));
+            const data = JSON.parse(localStorage.getItem('trip_v16_data'));
             if(!data) return alert("No records");
             if(data.lang) { document.getElementById('langSelect').value = data.lang; changeLang(); }
             document.getElementById('ipt_agency').value = data.agency||""; document.getElementById('ipt_company').value = data.company||"";
@@ -500,9 +524,11 @@
                     const cTitle = it.querySelector('.ipt-c-title').value, cLink = it.querySelector('.ipt-c-link').value;
                     const cImg = it.querySelector('.ipt-c-img').value, cPrice = it.querySelector('.ipt-c-price').value;
                     
+                    // 🔥 V16 Word 匯出修正：只保留文字連結，不插入 img 標籤
                     if(cLink) { 
                         content += `<br><br><table style="border:1pt solid #ddd;background:#fafafa;"><tr>`;
-                        if(cImg) content += `<td style="width:120px;padding:5px;"><img src="${cImg}" width="100" height="80"></td>`;
+                        // 移除圖片欄位
+                        // if(cImg) content += `<td style="width:120px;padding:5px;"><img src="${cImg}" width="100" height="80"></td>`;
                         content += `<td style="padding:5px;"><div style="font-weight:bold;font-size:12pt;color:#2c3e50;">${cTitle}</div><div style="color:#e67e22;font-weight:bold;">${cPrice}</div><a href="${cLink}" style="color:#2980b9;text-decoration:underline;">${t.btn_book} &gt;</a></td></tr></table>`;
                     }
                     html += `<tr><td style="width:80px;padding:10px;border:1px solid #eee;text-align:center;font-weight:bold;vertical-align:top;">${it.querySelector('.ipt-time').value}</td><td style="padding:10px;border:1px solid #eee;">${content}</td></tr>`;
