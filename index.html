@@ -10,20 +10,39 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
     <style>
-        /* CSS 樣式保持不變，為了版面整潔這裡省略，直接複製您原本 V11 的 style 即可 */
         * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         :root { --primary-color: #2c3e50; --accent-color: #2980b9; --bg-color: #f0f2f5; --paper-color: #ffffff; --input-height: 42px; }
         body { font-family: "Microsoft JhengHei", "Heiti TC", sans-serif; background-color: var(--bg-color); margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
         body.preview-mode { background-color: #444 !important; }
 
-        .lang-switch { position: absolute; top: 20px; right: 20px; z-index: 100; display: flex; align-items: center; gap: 10px; }
-        .brand-logo { font-size: 20px; font-weight: 900; color: var(--primary-color); font-family: 'Arial', sans-serif; text-shadow: 1px 1px 0px rgba(255,255,255,0.8); letter-spacing: 1px; cursor: default; }
-        .lang-switch select { padding: 8px 15px; border-radius: 20px; border: 1px solid #ccc; font-size: 14px; background: white; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        /* V14: 歐式導覽列 */
+        .lang-switch { 
+            position: relative; width: 95%; max-width: 210mm; margin: 0 auto; 
+            padding: 20px 0; display: flex; justify-content: space-between; 
+            align-items: center; z-index: 100;
+        }
+        .brand-logo {
+            font-size: 24px; font-weight: 900; color: var(--primary-color); 
+            font-family: 'Arial', sans-serif; letter-spacing: 1px; cursor: default;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .lang-switch select { 
+            padding: 8px 15px; border-radius: 20px; border: 1px solid #ccc; 
+            font-size: 14px; background: white; cursor: pointer; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05); transition: 0.2s;
+        }
+        .lang-switch select:hover { border-color: var(--accent-color); }
 
         .toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1000000; pointer-events: none; }
         .toast-msg { background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(8px); color: white; padding: 12px 25px; border-radius: 50px; font-size: 14px; font-weight: bold; margin-bottom: 10px; opacity: 0; transform: translateY(-20px); transition: all 0.4s; display: flex; align-items: center; white-space: nowrap; }
         .toast-msg.show { opacity: 1; transform: translateY(0); }
-        .container { width: 95%; max-width: 210mm; min-height: 297mm; background: var(--paper-color); padding: 40px; margin: 20px auto 160px auto; box-shadow: 0 4px 15px rgba(0,0,0,0.1); position: relative; }
+        
+        .container { 
+            width: 95%; max-width: 210mm; min-height: 297mm; 
+            background: var(--paper-color); padding: 40px; margin: 0 auto 160px auto; 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08); position: relative; 
+        }
+
         .company-header input { font-size: 24pt; font-weight: bold; text-align: center; border: none; border-bottom: 2px solid #eee; width: 100%; color: var(--primary-color); background: transparent; margin-bottom: 10px; height: 60px; }
         h1 { text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; font-size: 26pt; margin: 10px 0 25px 0; }
         input, textarea { padding: 8px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 11pt; background: #fafafa; font-family: inherit; }
@@ -59,12 +78,9 @@
         .card-price { color: #e67e22; font-weight: bold; font-size: 12pt; }
         .card-btn { background: #2980b9; color: white; padding: 4px 12px; border-radius: 4px; font-size: 9pt; font-weight: bold; }
         
-        .card-edit-trigger { position: absolute; top: 5px; right: 5px; background: rgba(255,255,255,0.9); border: 1px solid #ccc; border-radius: 50%; width: 24px; height: 24px; text-align: center; line-height: 22px; font-size: 12px; cursor: pointer; display: none; color: #555; }
-        .booking-card:hover .card-edit-trigger { display: block; }
-
-        .card-editor { margin-top: 5px; margin-left: 92px; padding: 10px; background: #f8f9fa; border: 1px dashed #ccc; border-radius: 8px; display: none; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .card-editor.active { display: grid; }
-        .card-editor input { height: 32px; font-size: 12px; }
+        /* 隱藏的資料欄位 (不顯示小鉛筆，但欄位需存在以存取資料) */
+        .card-editor { display: none; } 
+        .card-editor.active { display: grid; } /* 雖然保留class邏輯，但不再有按鈕觸發它 */
 
         .add-act-wrapper { text-align: center; padding: 15px; background: #f9f9f9; border-top: 1px dashed #ccc; }
         .btn-add { background: #5da5da; color: white; border: none; padding: 12px 30px; border-radius: 25px; cursor: pointer; font-weight: bold; font-size: 14px; }
@@ -85,7 +101,7 @@
         .hidden { display: none !important; }
 
         body.preview-mode .ipt-time, body.preview-mode .itinerary-item textarea, body.preview-mode .ipt-note, body.preview-mode .form-group input, body.preview-mode .cost-table td input { border: none !important; background: transparent !important; padding-left: 0; padding-right: 0; }
-        body.preview-mode .btn-add, body.preview-mode .add-act-wrapper, body.preview-mode .item-del-btn, body.preview-mode .card-editor, body.preview-mode .smart-suggestion-area, body.preview-mode .card-edit-trigger { display: none !important; }
+        body.preview-mode .btn-add, body.preview-mode .add-act-wrapper, body.preview-mode .item-del-btn, body.preview-mode .card-editor, body.preview-mode .smart-suggestion-area { display: none !important; }
         body.preview-mode input, body.preview-mode textarea { pointer-events: none; }
         body.preview-mode .booking-card { pointer-events: auto; cursor: pointer; }
         
@@ -95,7 +111,11 @@
             .form-group { flex-direction: row; align-items: center; border-bottom: 1px solid #f0f0f0; } 
             label { width: 90px; } 
             .booking-card, .smart-suggestion-area, .card-editor { margin-left: 0; }
-            .lang-switch { position: relative; top: auto; right: auto; width: 100%; justify-content: space-between; padding: 10px 15px; background-color: #fff; border-bottom: 1px solid #eee; }
+            
+            .lang-switch {
+                width: 100%; max-width: 100%; justify-content: space-between; 
+                padding: 10px 15px; background-color: #fff; border-bottom: 1px solid #eee;
+            }
         }
         @media print { .no-print { display: none !important; } }
         
@@ -113,7 +133,7 @@
 <body>
 
     <div class="lang-switch no-print">
-        <div class="brand-logo">My Trips</div>
+        <div class="brand-logo">My Trip</div>
         <select id="langSelect" onchange="changeLang()">
             <option value="zh-TW">繁體中文</option>
             <option value="en">English</option>
@@ -163,23 +183,16 @@
     </div>
 
     <script>
-        // ================================================================
-        // 🔥 Travelpayouts 設定區 (V12)
-        // ================================================================
-        
         const AFFILIATE_CONFIG = {
-            tp_marker: "699011", // 您的 Travelpayouts Marker
+            tp_marker: "699011", // Travelpayouts Marker
             img_gen_url: "https://image.pollinations.ai/prompt/" 
         };
 
-        // 預設私房推薦 (可選)
         let affiliateDatabase = [
             { keywords: "disney,迪士尼", label: "🔥 必去", title: "Tokyo Disney Resort Ticket", price: "$85 up", link: "https://www.klook.com/activity/695-tokyo-disney-resort-1-day-pass-tokyo/", img: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Cinderella_Castle%2C_Tokyo_Disneyland.jpg/320px-Cinderella_Castle%2C_Tokyo_Disneyland.jpg" }
         ];
 
         let GOOGLE_SHEET_CSV_URL = ""; 
-
-        // ================================================================
 
         window.addEventListener('DOMContentLoaded', () => {
             if(GOOGLE_SHEET_CSV_URL) {
@@ -264,16 +277,13 @@
             if (e.target.classList.contains('card-input')) updateCardDisplay(e.target.closest('.itinerary-item'));
         });
 
-        // ==========================================
-        // 🔥 自動偵測邏輯 (Travelpayouts 版)
-        // ==========================================
+        // 🔥 V14 關鍵修正：移除了「如果已有連結就擋住偵測」的判斷式
         function detectKeywords(textarea) {
             const val = textarea.value.trim();
             if(val.length < 2) return; 
             
             const parent = textarea.closest('.itinerary-item');
-            if (parent.querySelector('.ipt-c-link').value) return; 
-
+            
             let suggestArea = parent.querySelector('.smart-suggestion-area');
             if (!suggestArea) {
                 suggestArea = document.createElement('div');
@@ -316,9 +326,6 @@
             }
         }
 
-        // ==========================================
-        // 🔥 連結生成器 (Travelpayouts Deep Link)
-        // ==========================================
         function generateSearchCard(itemRow, city, type) {
             const t = i18n[currentLang];
             let link = "", title = "", price = "";
@@ -328,12 +335,10 @@
 
             if(type === 'booking') {
                 title = t.card_hotel_title.replace('{city}', city);
-                // Booking.com via Travelpayouts (AID=304142 是 TP 公用 ID, label 放您的 Marker)
                 link = `https://www.booking.com/searchresults.html?ss=${encodeURIComponent(city)}&aid=304142&label=up_${marker}`;
                 price = t.card_check_price;
             } else if(type === 'klook') {
                 title = t.card_act_title.replace('{city}', city);
-                // Klook via Travelpayouts Deep Link
                 link = `https://c123.travelpayouts.com/click?shmarker=${marker}&promo_id=1584&source_type=link&type=click&custom_url=${encodeURIComponent('https://www.klook.com/search?query=' + city)}`;
                 price = t.card_check_price;
             }
@@ -397,10 +402,32 @@
         function createItemRow(data) {
             const t = i18n[currentLang];
             const { time="", content="", cTitle="", cLink="", cImg="", cPrice="" } = data;
-            return `<div class="itinerary-item"><div class="row-top"><input type="text" class="ipt-time" value="${time}" placeholder="${t.ph_time}" maxlength="5"><textarea class="item-content" placeholder="${t.ph_content}" rows="1" oninput="autoHeight(this)">${content}</textarea><button class="item-del-btn no-print" onclick="this.closest('.itinerary-item').remove()" style="border:none; background:none; color:#e74c3c; font-weight:bold; cursor:pointer; font-size:24px; padding:0 5px;">×</button></div><a href="${cLink}" target="_blank" class="booking-card" style="display:none;"><img src="${cImg}" class="card-img" onerror="this.style.display='none'"><div class="card-content"><div class="card-title">${cTitle}</div><div class="card-desc">${cLink}</div><div class="card-footer"><span class="card-price">${cPrice}</span><span class="card-btn">${t.btn_book}</span></div></div><div class="card-edit-trigger no-print" onclick="event.preventDefault(); event.stopPropagation(); toggleCardEditor(this)">✎</div></a><div class="card-editor"><input type="text" class="card-input ipt-c-title" value="${cTitle}" placeholder="${t.card_title_ph}"><input type="text" class="card-input ipt-c-price" value="${cPrice}" placeholder="${t.card_price_ph}"><input type="text" class="card-input ipt-c-link" value="${cLink}" placeholder="${t.card_link_ph}" style="grid-column: span 2;"><input type="text" class="card-input ipt-c-img" value="${cImg}" placeholder="${t.card_img_ph}" style="grid-column: span 2;"></div></div>`;
+            return `<div class="itinerary-item">
+                <div class="row-top">
+                    <input type="text" class="ipt-time" value="${time}" placeholder="${t.ph_time}" maxlength="5">
+                    <textarea class="item-content" placeholder="${t.ph_content}" rows="1" oninput="autoHeight(this)">${content}</textarea>
+                    <button class="item-del-btn no-print" onclick="this.closest('.itinerary-item').remove()" style="border:none; background:none; color:#e74c3c; font-weight:bold; cursor:pointer; font-size:24px; padding:0 5px;">×</button>
+                </div>
+                <a href="${cLink}" target="_blank" class="booking-card" style="display:none;">
+                    <img src="${cImg}" class="card-img" onerror="this.style.display='none'">
+                    <div class="card-content">
+                        <div class="card-title">${cTitle}</div>
+                        <div class="card-desc">${cLink}</div>
+                        <div class="card-footer">
+                            <span class="card-price">${cPrice}</span>
+                            <span class="card-btn">${t.btn_book}</span>
+                        </div>
+                    </div>
+                </a>
+                <div class="card-editor">
+                    <input type="text" class="card-input ipt-c-title" value="${cTitle}">
+                    <input type="text" class="card-input ipt-c-price" value="${cPrice}">
+                    <input type="text" class="card-input ipt-c-link" value="${cLink}">
+                    <input type="text" class="card-input ipt-c-img" value="${cImg}">
+                </div>
+            </div>`;
         }
 
-        function toggleCardEditor(btn) { btn.closest('.itinerary-item').querySelector('.card-editor').classList.toggle('active'); }
         function addAct(btn) { btn.closest('.day-group').querySelector('.items-list').appendChild(document.createElement('div')).outerHTML = createItemRow({}); }
         
         function toggleMode(isPreview) {
@@ -435,11 +462,11 @@
                 date: document.getElementById('ipt_date').value, daysCount: document.getElementById('ipt_days').value,
                 costs: [1,2,3,4,5,6].map(i => document.getElementById('ipt_c'+i).value), days: days
             };
-            localStorage.setItem('trip_v12_data', JSON.stringify(data));
+            localStorage.setItem('trip_v14_data', JSON.stringify(data));
             showToast("✅ Saved");
         }
         function loadData() {
-            const data = JSON.parse(localStorage.getItem('trip_v12_data'));
+            const data = JSON.parse(localStorage.getItem('trip_v14_data'));
             if(!data) return alert("No records");
             if(data.lang) { document.getElementById('langSelect').value = data.lang; changeLang(); }
             document.getElementById('ipt_agency').value = data.agency||""; document.getElementById('ipt_company').value = data.company||"";
