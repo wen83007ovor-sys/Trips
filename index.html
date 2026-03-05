@@ -115,9 +115,16 @@
         .note-label { font-weight: bold; color: #856404; font-size: 11pt; display: block; margin-bottom: 5px; }
         .ipt-note { width: 100%; min-height: 40px; line-height: 1.6; resize: vertical; overflow: hidden; background: #fffef0; }
 
-        .toolbar-fixed { position: fixed; bottom: 0; left: 0; width: 100%; background: #ffffff; z-index: 99999; box-shadow: 0 -5px 25px rgba(0,0,0,0.3); padding: 15px 15px calc(15px + env(safe-area-inset-bottom)); display: flex; justify-content: center; }
-        .btn-group { display: flex; gap: 8px; width: 100%; max-width: 900px; }
-        .btn { flex: 1; padding: 14px 5px; border-radius: 10px; border: none; font-weight: bold; color: #fff; font-size: 14px; cursor: pointer; transition: 0.2s; }
+        /* 懸浮按鈕 FAB */
+        .fab-container { position: fixed; bottom: calc(20px + env(safe-area-inset-bottom)); right: 20px; z-index: 99999; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; user-select: none; }
+        .fab-main { width: 58px; height: 58px; border-radius: 50%; border: none; color: #fff; font-size: 26px; cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; transition: transform 0.2s, box-shadow 0.2s; background: #2c3e50; flex-shrink: 0; }
+        .fab-main:active { transform: scale(0.92); }
+        .fab-menu { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; transition: opacity 0.25s, transform 0.25s; }
+        .fab-menu.collapsed { opacity: 0; pointer-events: none; transform: translateY(10px); }
+        .fab-row { display: flex; align-items: center; gap: 10px; }
+        .fab-label { background: rgba(30,30,30,0.82); color: #fff; font-size: 13px; font-weight: bold; padding: 6px 13px; border-radius: 20px; white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,0.18); pointer-events: none; }
+        .btn { width: 50px; height: 50px; border-radius: 50%; border: none; font-weight: bold; color: #fff; font-size: 20px; cursor: pointer; box-shadow: 0 3px 10px rgba(0,0,0,0.25); display: flex; align-items: center; justify-content: center; transition: transform 0.15s; flex-shrink: 0; }
+        .btn:active { transform: scale(0.9); }
         .btn-edit-save { background: #e67e22; }
         .btn-edit-load { background: #8e44ad; }
         .btn-edit-gen { background: #27ae60; }
@@ -127,16 +134,22 @@
         .btn-pre-word { background: #2980b9; }
         .hidden { display: none !important; }
 
-        body.preview-mode .ipt-time, body.preview-mode .item-content, body.preview-mode .ipt-note, body.preview-mode .form-group input, body.preview-mode .cost-table td input { border: none !important; background: transparent !important; padding-left: 0; padding-right: 0; }
+        body.preview-mode .ipt-time, body.preview-mode .item-content, body.preview-mode .form-group input, body.preview-mode .cost-table td input { border: none !important; background: transparent !important; padding-left: 0; padding-right: 0; }
+        body.preview-mode .form-group { border-bottom: 1px solid #eee !important; }
         body.preview-mode .btn-add, body.preview-mode .add-act-wrapper, body.preview-mode .btn-del-item, body.preview-mode .card-editor, body.preview-mode .tools-area { display: none !important; }
         body.preview-mode input, body.preview-mode textarea { pointer-events: none; }
         body.preview-mode .confirmed-link-badge { display: inline-flex; pointer-events: auto; }
         
         /* PDF 專用排版 */
         .pdf-render-fix { width: 800px !important; min-width: 800px !important; max-width: 800px !important; margin: 0 !important; padding: 40px !important; box-shadow: none !important; background: white !important; display: block !important; }
-        .pdf-render-fix .form-section { grid-template-columns: 1fr 1fr !important; display: grid !important; }
-        .pdf-render-fix .form-group { flex-direction: row !important; }
+        .pdf-render-fix .form-section { grid-template-columns: 1fr 1fr !important; display: grid !important; gap: 8px 20px !important; margin-bottom: 25px !important; }
+        .pdf-render-fix .form-group { flex-direction: row !important; border-bottom: 1px solid #eee !important; padding: 6px 0 !important; }
+        .pdf-render-fix .form-group input { border: none !important; background: transparent !important; padding-left: 0 !important; height: auto !important; font-size: 11pt !important; }
+        .pdf-render-fix label { font-size: 10pt !important; width: 90px !important; }
         
+        .pdf-render-fix .cost-table { margin-top: 20px !important; page-break-inside: avoid; }
+        .pdf-render-fix .cost-table th { font-size: 10pt !important; padding: 6px 10px !important; }
+        .pdf-render-fix .cost-table td input { font-size: 10pt !important; }
         .pdf-render-fix .day-group { margin-bottom: 15px !important; border: 1px solid #444 !important; }
         
         .pdf-render-fix .itinerary-item {
@@ -221,34 +234,39 @@
             <div class="form-group"><label data-i18n="phone">聯絡電話：</label><input type="text" id="ipt_phone"></div>
             <div class="form-group"><label data-i18n="date">出發日期：</label><input type="date" id="ipt_date"></div>
             <div class="form-group"><label data-i18n="days">行程天數：</label><input type="number" id="ipt_days" value="3"></div>
+            <div class="form-group"><label data-i18n="meetup">集合地點：</label><input type="text" id="ipt_meetup"></div>
         </div>
 
-        <table class="cost-table">
+        <div id="itineraryContainer">
+            <p style="text-align: center; color: #999; padding: 50px;" class="no-print" data-i18n="click_hint">請點擊下方「1. 行程」</p>
+        </div>
+
+        <table class="cost-table" style="margin-top: 40px;">
             <tr><th data-i18n="c1_label">個人團費</th><td><input type="text" id="ipt_c1" data-ph="c1_ph" placeholder="$ /人"></td></tr>
             <tr><th data-i18n="c2_label">交通</th><td><input type="text" id="ipt_c2" data-ph="c2_ph" placeholder="交通說明: 車資/機票"></td></tr>
             <tr><th data-i18n="c3_label">餐食</th><td><input type="text" id="ipt_c3" data-ph="c3_ph" placeholder="早午晚餐說明"></td></tr>
             <tr><th data-i18n="c4_label">住宿</th><td><input type="text" id="ipt_c4" data-ph="c4_ph" placeholder="飯店名稱與房型"></td></tr>
             <tr><th data-i18n="c5_label">費用包含</th><td><input type="text" id="ipt_c5" data-ph="c5_ph" placeholder="門票保險等"></td></tr>
-            <tr><th data-i18n="c6_label">備註事項</th><td><input type="text" id="ipt_c6" data-ph="c6_ph" placeholder="集合時間地點"></td></tr>
         </table>
-
-        <div id="itineraryContainer">
-            <p style="text-align: center; color: #999; padding: 50px;" class="no-print" data-i18n="click_hint">請點擊下方「1. 行程」</p>
-        </div>
     </div>
 
-    <div class="toolbar-fixed no-print">
-        <div id="group-edit" class="btn-group">
-            <button class="btn btn-edit-save" onclick="saveData()">💾 <span data-i18n="btn_save">存檔</span></button>
-            <button class="btn btn-edit-load" onclick="loadData()">📂 <span data-i18n="btn_load">讀檔</span></button>
-            <button class="btn btn-edit-gen" onclick="buildItinerary()">📝 <span data-i18n="btn_gen">1.行程</span></button>
-            <button class="btn btn-edit-preview" onclick="toggleMode(true)">👁️ <span data-i18n="btn_view">2.預覽</span></button>
+    <!-- 懸浮按鈕 -->
+    <div class="fab-container no-print" id="fabContainer">
+        <!-- 編輯模式選單 -->
+        <div id="group-edit" class="fab-menu">
+            <div class="fab-row"><span class="fab-label" data-i18n="btn_view">2.預覽</span><button class="btn btn-edit-preview" onclick="toggleMode(true)">👁️</button></div>
+            <div class="fab-row"><span class="fab-label" data-i18n="btn_gen">1.行程</span><button class="btn btn-edit-gen" onclick="buildItinerary()">📝</button></div>
+            <div class="fab-row"><span class="fab-label" data-i18n="btn_load">讀檔</span><button class="btn btn-edit-load" onclick="loadData()">📂</button></div>
+            <div class="fab-row"><span class="fab-label" data-i18n="btn_save">存檔</span><button class="btn btn-edit-save" onclick="saveData()">💾</button></div>
         </div>
-        <div id="group-preview" class="btn-group hidden">
-            <button class="btn btn-pre-back" onclick="toggleMode(false)">⬅ <span data-i18n="btn_back">返回</span></button>
-            <button class="btn btn-pre-pdf" onclick="downloadPDF()">📥 <span data-i18n="btn_pdf">PDF</span></button>
-            <button class="btn btn-pre-word" onclick="downloadWord()">📥 <span data-i18n="btn_word">Word</span></button>
+        <!-- 預覽模式選單 -->
+        <div id="group-preview" class="fab-menu hidden">
+            <div class="fab-row"><span class="fab-label" data-i18n="btn_word">下載Word</span><button class="btn btn-pre-word" onclick="downloadWord()">📄</button></div>
+            <div class="fab-row"><span class="fab-label" data-i18n="btn_pdf">下載PDF</span><button class="btn btn-pre-pdf" onclick="downloadPDF()">📥</button></div>
+            <div class="fab-row"><span class="fab-label" data-i18n="btn_back">返回編輯</span><button class="btn btn-pre-back" onclick="toggleMode(false)">⬅</button></div>
         </div>
+        <!-- 主按鈕 (展開/收合) -->
+        <button class="fab-main" id="fabMain" onclick="toggleFab()">☰</button>
     </div>
 
     <script>
@@ -260,13 +278,39 @@
 
         window.addEventListener('DOMContentLoaded', () => {
             applyLang();
+            document.getElementById('fabMain').textContent = '✕';
+            // 可拖曳 FAB
+            const fab = document.getElementById('fabContainer');
+            if (!fab) return;
+            let dragging = false, startX, startY, origRight, origBottom;
+            fab.addEventListener('pointerdown', function(e) {
+                if (e.target.closest('button')) return;
+                dragging = true;
+                startX = e.clientX; startY = e.clientY;
+                const rect = fab.getBoundingClientRect();
+                origRight = window.innerWidth - rect.right;
+                origBottom = window.innerHeight - rect.bottom;
+                fab.setPointerCapture(e.pointerId);
+                e.preventDefault();
+            });
+            fab.addEventListener('pointermove', function(e) {
+                if (!dragging) return;
+                const dx = e.clientX - startX, dy = e.clientY - startY;
+                let newRight = origRight - dx;
+                let newBottom = origBottom - dy;
+                newRight = Math.max(8, Math.min(window.innerWidth - 70, newRight));
+                newBottom = Math.max(8, Math.min(window.innerHeight - 70, newBottom));
+                fab.style.right = newRight + 'px';
+                fab.style.bottom = newBottom + 'px';
+            });
+            fab.addEventListener('pointerup', function() { dragging = false; });
         });
         
         const i18n = {
             "zh-TW": {
-                title: "旅遊行程", client: "客戶名稱：", contact: "聯絡窗口：", phone: "聯絡電話：", date: "出發日期：", days: "行程天數：",
-                c1_label: "個人團費", c2_label: "交通", c3_label: "餐食", c4_label: "住宿", c5_label: "費用包含", c6_label: "備註事項",
-                ph_agency: "輸入旅行社名稱", c1_ph: "$ /人", c2_ph: "交通說明: 車資/機票", c3_ph: "早午晚餐說明", c4_ph: "飯店名稱與房型", c5_ph: "門票保險等", c6_ph: "集合時間地點",
+                title: "旅遊行程", client: "客戶名稱：", contact: "聯絡窗口：", phone: "聯絡電話：", meetup: "集合地點：", date: "出發日期：", days: "行程天數：",
+                c1_label: "個人團費", c2_label: "交通", c3_label: "餐食", c4_label: "住宿", c5_label: "費用包含",
+                ph_agency: "輸入旅行社名稱", c1_ph: "$ /人", c2_ph: "交通說明: 車資/機票", c3_ph: "早午晚餐說明", c4_ph: "飯店名稱與房型", c5_ph: "門票保險等",
                 btn_save: "存檔", btn_load: "讀檔", btn_gen: "1.行程", btn_view: "2.預覽", btn_back: "返回編輯", btn_pdf: "下載PDF", btn_word: "下載Word",
                 click_hint: "請點擊下方「1. 行程」", day_header: "Day", note_label: "當日備註：", add_item: "+ 增加項目",
                 ph_time: "00:00", ph_content: "輸入地名 (如: 大阪, 首爾)", 
@@ -284,9 +328,9 @@
                 word_link_prefix: "預訂連結"
             },
             "en": {
-                title: "Travel Itinerary", client: "Client:", contact: "Contact:", phone: "Phone:", date: "Start:", days: "Days:",
-                c1_label: "Fee", c2_label: "Transport", c3_label: "Meals", c4_label: "Hotel", c5_label: "Included", c6_label: "Remarks",
-                ph_agency: "Agency Name", c1_ph: "$", c2_ph: "Details", c3_ph: "Details", c4_ph: "Hotel Name", c5_ph: "Items", c6_ph: "Time/Place",
+                title: "Travel Itinerary", client: "Client:", contact: "Contact:", phone: "Phone:", meetup: "Meeting Point:", date: "Start Date:", days: "Days:",
+                c1_label: "Fee", c2_label: "Transport", c3_label: "Meals", c4_label: "Hotel", c5_label: "Included",
+                ph_agency: "Agency Name", c1_ph: "$", c2_ph: "Details", c3_ph: "Details", c4_ph: "Hotel Name", c5_ph: "Items",
                 btn_save: "Save", btn_load: "Load", btn_gen: "Build", btn_view: "Preview", btn_back: "Edit", btn_pdf: "PDF", btn_word: "Word",
                 click_hint: "Click 'Build' below", day_header: "Day", note_label: "Notes:", add_item: "+ Item",
                 ph_time: "00:00", ph_content: "Type city (e.g. London)", 
@@ -449,7 +493,7 @@
                     : createItemRow({});
                 const noteVal = (existingData && existingData.days[i-1]) ? existingData.days[i-1].note : "";
                 const group = document.createElement('div'); group.className = 'day-group';
-                group.innerHTML = `<div class="day-header" data-day="${i}" data-date="${dateStr}">${t.day_header} ${i} (${dateStr})</div><div class="items-list">${itemsHtml}</div><div class="add-act-wrapper"><button class="btn-add" onclick="addAct(this)">${t.add_item}</button></div><div class="note-area"><span class="note-label">${t.note_label}</span><textarea class="ipt-note" oninput="autoHeight(this)">${noteVal}</textarea></div>`;
+                group.innerHTML = `<div class="day-header" data-day="${i}" data-date="${dateStr}">${t.day_header} ${i} (${dateStr})</div><div class="items-list">${itemsHtml}</div><div class="add-act-wrapper"><button class="btn-add" onclick="addAct(this)">${t.add_item}</button></div>`;
                 container.appendChild(group);
             }
             document.querySelectorAll('textarea').forEach(t => autoHeight(t));
@@ -484,12 +528,15 @@
         
         function toggleMode(isPreview) {
             document.body.classList.toggle('preview-mode', isPreview);
-            document.getElementById('group-edit').classList.toggle('hidden', isPreview);
-            document.getElementById('group-preview').classList.toggle('hidden', !isPreview);
-            document.querySelectorAll('.day-group').forEach(group => {
-                const noteInput = group.querySelector('.ipt-note');
-                group.querySelector('.note-area').style.display = (isPreview && noteInput.value.trim() === "") ? 'none' : 'block';
-            });
+            const editGrp = document.getElementById('group-edit');
+            const preGrp = document.getElementById('group-preview');
+            editGrp.classList.toggle('hidden', isPreview);
+            preGrp.classList.toggle('hidden', !isPreview);
+            // 切換後展開選單，移除 collapsed
+            fabOpen = true;
+            document.getElementById('fabMain').textContent = '✕';
+            editGrp.classList.remove('collapsed');
+            preGrp.classList.remove('collapsed');
             document.querySelectorAll('input, textarea').forEach(el => { if(!el.classList.contains('ipt-c-link')) el.readOnly = isPreview; });
             if(isPreview) document.querySelectorAll('textarea').forEach(t => autoHeight(t));
         }
@@ -504,14 +551,15 @@
                         cLink: it.querySelector('.ipt-c-link').value
                     });
                 });
-                days.push({ items: items, note: group.querySelector('.ipt-note').value });
+                days.push({ items: items });
             });
             const data = {
                 lang: currentLang,
                 agency: document.getElementById('ipt_agency').value, company: document.getElementById('ipt_company').value,
                 contact: document.getElementById('ipt_contact').value, phone: document.getElementById('ipt_phone').value,
+                meetup: document.getElementById('ipt_meetup').value,
                 date: document.getElementById('ipt_date').value, daysCount: document.getElementById('ipt_days').value,
-                costs: [1,2,3,4,5,6].map(i => document.getElementById('ipt_c'+i).value), days: days
+                costs: [1,2,3,4,5].map(i => document.getElementById('ipt_c'+i).value), days: days
             };
             localStorage.setItem('trip_v36_data', JSON.stringify(data));
             showToast(i18n[currentLang].msg_saved); 
@@ -522,6 +570,7 @@
             if(data.lang) { document.getElementById('langSelect').value = data.lang; changeLang(); }
             document.getElementById('ipt_agency').value = data.agency||""; document.getElementById('ipt_company').value = data.company||"";
             document.getElementById('ipt_contact').value = data.contact||""; document.getElementById('ipt_phone').value = data.phone||"";
+            if(document.getElementById('ipt_meetup')) document.getElementById('ipt_meetup').value = data.meetup||"";
             document.getElementById('ipt_date').value = data.date||""; document.getElementById('ipt_days').value = data.daysCount||3;
             data.costs.forEach((v, i) => { if(document.getElementById('ipt_c'+(i+1))) document.getElementById('ipt_c'+(i+1)).value = v; });
             buildItinerary(data); 
@@ -563,30 +612,23 @@
         }
         function downloadWord() {
             const t = i18n[currentLang];
-            let html = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word'><head><meta charset="utf-8"><style>body{font-family:"Microsoft JhengHei";}table{border-collapse:collapse;width:100%;}</style></head><body>`;
+            let html = '<html xmlns:o=\'urn:schemas-microsoft-com:office:office\' xmlns:w=\'urn:schemas-microsoft-com:office:word\'><head><meta charset="utf-8"><style>body{font-family:"Microsoft JhengHei";}table{border-collapse:collapse;width:100%;}</style></head><body>';
             
             const agency = document.getElementById('ipt_agency').value;
-            if(agency && agency.trim() !== "") { html += `<p style="text-align:center;font-size:20pt;font-weight:bold;">${agency}</p>`; }
-            html += `<p style="text-align:center;font-size:24pt;font-weight:bold;border-bottom:2px double #000;">${t.title}</p>`;
+            if(agency && agency.trim() !== "") { html += '<p style="text-align:center;font-size:20pt;font-weight:bold;">' + agency + '</p>'; }
+            html += '<p style="text-align:center;font-size:24pt;font-weight:bold;border-bottom:2px double #000;">' + t.title + '</p>';
             
-            html += `<table><tr><td style="font-weight:bold;">${t.client}</td><td>${document.getElementById('ipt_company').value}</td><td style="font-weight:bold;">${t.contact}</td><td>${document.getElementById('ipt_contact').value}</td></tr>`;
-            html += `<tr><td style="font-weight:bold;">${t.phone}</td><td>${document.getElementById('ipt_phone').value}</td><td style="font-weight:bold;">${t.date}</td><td>${document.getElementById('ipt_date').value}</td></tr></table><br>`;
-            
-            html += `<p style="font-size:14pt;font-weight:bold;margin-bottom:10px;">${t.word_cost_title}</p><table style="width:100%;border:1px solid #000;">`;
-            const costLabels = [];
-            for(let i=1; i<=6; i++) costLabels.push(document.querySelector(`[data-i18n="c${i}_label"]`).textContent);
-            for(let i=1; i<=6; i++) {
-                const val = document.getElementById('ipt_c'+i).value;
-                html += `<tr><td style="width:25%;background:#f8f9fa;border:1px solid #000;padding:5px;font-weight:bold;">${costLabels[i-1]}</td><td style="width:75%;border:1px solid #000;padding:5px;">${val}</td></tr>`;
-            }
-            html += `</table><br clear="all" style="page-break-before:always;">`;
+            html += '<table border="1" style="border-collapse:collapse;width:100%;">';
+            html += '<tr><td style="font-weight:bold;padding:6px 10px;background:#f8f9fa;width:20%;">' + t.client + '</td><td style="padding:6px 10px;width:30%;">' + document.getElementById('ipt_company').value + '</td><td style="font-weight:bold;padding:6px 10px;background:#f8f9fa;width:20%;">' + t.contact + '</td><td style="padding:6px 10px;width:30%;">' + document.getElementById('ipt_contact').value + '</td></tr>';
+            html += '<tr><td style="font-weight:bold;padding:6px 10px;background:#f8f9fa;">' + t.phone + '</td><td style="padding:6px 10px;">' + document.getElementById('ipt_phone').value + '</td><td style="font-weight:bold;padding:6px 10px;background:#f8f9fa;">' + t.date + '</td><td style="padding:6px 10px;">' + document.getElementById('ipt_date').value + '</td></tr>';
+            html += '<tr><td style="font-weight:bold;padding:6px 10px;background:#f8f9fa;">' + t.days + '</td><td style="padding:6px 10px;">' + document.getElementById('ipt_days').value + '</td><td style="font-weight:bold;padding:6px 10px;background:#f8f9fa;">' + t.meetup + '</td><td style="padding:6px 10px;">' + document.getElementById('ipt_meetup').value + '</td></tr>';
+            html += '</table><br>';
 
-            document.querySelectorAll('.day-group').forEach(group => {
-                html += `<table style="border:1.5pt solid #2c3e50;margin-bottom:20px;"><tr style="background:#2c3e50;color:#fff;"><td colspan="2" style="padding:10px;font-weight:bold;">${group.querySelector('.day-header').innerText}</td></tr>`;
-                group.querySelectorAll('.itinerary-item').forEach(it => {
+            document.querySelectorAll('.day-group').forEach(function(group) {
+                html += '<table border="1" style="border-collapse:collapse;width:100%;margin-bottom:20px;"><tr style="background:#2c3e50;color:#fff;"><td colspan="2" style="padding:10px;font-weight:bold;">' + group.querySelector('.day-header').innerText + '</td></tr>';
+                group.querySelectorAll('.itinerary-item').forEach(function(it) {
                     let content = it.querySelector('.item-content').value.replace(/\n/g, '<br>');
                     const cLink = it.querySelector('.ipt-c-link').value;
-                    
                     if(cLink) { 
                         let displayLink = cLink;
                         try {
@@ -594,18 +636,37 @@
                             displayLink = urlObj.hostname + (urlObj.pathname.length > 1 ? urlObj.pathname : "") + "...";
                             if(displayLink.length > 45) displayLink = displayLink.substring(0, 42) + "...";
                         } catch(e) {}
-                        
-                        content += `<p style="margin-top:2px;margin-bottom:0;"><a href="${cLink}" style="color:#003580;text-decoration:underline;font-size:10pt;">${t.word_link_prefix}: ${displayLink}</a></p>`;
+                        content += '<p style="margin-top:2px;margin-bottom:0;"><a href="' + cLink + '" style="color:#003580;text-decoration:underline;font-size:10pt;">' + t.word_link_prefix + ': ' + displayLink + '</a></p>';
                     }
-                    html += `<tr><td style="width:80px;padding:10px;border:1px solid #eee;text-align:center;font-weight:bold;vertical-align:middle;">${it.querySelector('.ipt-time').value}</td><td style="padding:10px;border:1px solid #eee;">${content}</td></tr>`;
+                    html += '<tr><td style="width:80px;padding:10px;border:1px solid #eee;text-align:center;font-weight:bold;vertical-align:middle;">' + it.querySelector('.ipt-time').value + '</td><td style="padding:10px;border:1px solid #eee;">' + content + '</td></tr>';
                 });
-                const note = group.querySelector('.ipt-note').value;
-                if(note) html += `<tr><td colspan="2" style="background:#fffbe6;padding:10px;color:#555;"><strong>${t.note_label}</strong><br>${note.replace(/\n/g, '<br>')}</td></tr>`;
-                html += `</table>`;
+                html += '</table>';
             });
-            html += `</body></html>`;
+
+            html += '<br><p style="font-size:14pt;font-weight:bold;margin-bottom:10px;">' + t.word_cost_title + '</p><table style="width:100%;border:1px solid #000;">';
+            const costLabels = [];
+            for(let i=1; i<=5; i++) costLabels.push(document.querySelector('[data-i18n="c' + i + '_label"]').textContent);
+            for(let i=1; i<=5; i++) {
+                const val = document.getElementById('ipt_c'+i).value;
+                html += '<tr><td style="width:25%;background:#f8f9fa;border:1px solid #000;padding:5px;font-weight:bold;">' + costLabels[i-1] + '</td><td style="width:75%;border:1px solid #000;padding:5px;">' + val + '</td></tr>';
+            }
+            html += '</table>';
             saveAs(new Blob([html], {type:'application/msword'}), 'Itinerary.doc');
         }
+        // FAB 展開/收合
+        let fabOpen = true;
+        function toggleFab() {
+            fabOpen = !fabOpen;
+            const editGrp = document.getElementById('group-edit');
+            const previewGrp = document.getElementById('group-preview');
+            document.getElementById('fabMain').textContent = fabOpen ? '✕' : '☰';
+            [editGrp, previewGrp].forEach(m => {
+                if (m && !m.classList.contains('hidden')) {
+                    m.classList.toggle('collapsed', !fabOpen);
+                }
+            });
+        }
+
     </script>
 </body>
 </html>
