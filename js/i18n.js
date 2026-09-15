@@ -1,4 +1,4 @@
-import { getLang } from './state.js';
+import { getLang } from './state.js?v=1';
 
 export const i18n = {
     "zh-TW": {

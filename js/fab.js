@@ -1,5 +1,5 @@
-import { isFabOpen, setFabOpen, setPreviewMode } from './state.js';
-import { autoHeight } from './util.js';
+import { isFabOpen, setFabOpen, setPreviewMode } from './state.js?v=1';
+import { autoHeight } from './util.js?v=1';
 
 export function toggleMode(isPreview) {
     document.body.classList.toggle('preview-mode', isPreview);

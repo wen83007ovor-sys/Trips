@@ -1,7 +1,7 @@
-import { t } from './i18n.js';
-import { getLang } from './state.js';
-import { AFFILIATE_CONFIG } from './config.js';
-import { escapeHtml } from './util.js';
+import { t } from './i18n.js?v=1';
+import { getLang } from './state.js?v=1';
+import { AFFILIATE_CONFIG } from './config.js?v=1';
+import { escapeHtml } from './util.js?v=1';
 
 export function detectKeywords(textarea) {
     const val = textarea.value.trim();

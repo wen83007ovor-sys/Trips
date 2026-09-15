@@ -1,5 +1,5 @@
-import { loadScriptOnce } from './util.js';
-import { t } from './i18n.js';
+import { loadScriptOnce } from './util.js?v=1';
+import { t } from './i18n.js?v=1';
 
 const FILESAVER_URL = 'https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js';
 
