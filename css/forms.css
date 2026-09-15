@@ -1,0 +1,14 @@
+.form-section { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px 25px; margin-bottom: 30px; }
+.form-group { display: flex; align-items: center; border-bottom: 1px solid var(--color-neutral-200); padding: 8px 0; transition: border-color 0.15s; }
+.form-group:focus-within { border-bottom-color: var(--color-accent-600); }
+label { font-size: 11pt; font-weight: bold; width: 110px; flex-shrink: 0; color: var(--color-neutral-900); }
+input, textarea { padding: 8px 12px; border: 1px solid var(--color-neutral-200); border-radius: var(--radius-sm); font-size: 11pt; background: var(--color-neutral-50); font-family: inherit; }
+.form-group input { flex-grow: 1; height: var(--input-height); }
+
+.cost-table { width: 100%; border-collapse: collapse; margin-bottom: 40px; background: var(--color-surface); }
+.cost-table th, .cost-table td { border: 1px solid #000; padding: 0 10px; font-size: 11pt; }
+.cost-table th { background-color: var(--color-neutral-50); width: 140px; text-align: center; height: 50px; }
+.cost-table td input { width: 100%; border: none; background: transparent; height: var(--input-height); }
+
+body.preview-mode .form-group input, body.preview-mode .cost-table td input { border: none !important; background: transparent !important; padding-left: 0; padding-right: 0; }
+body.preview-mode .form-group { border-bottom: 1px solid #eee !important; }

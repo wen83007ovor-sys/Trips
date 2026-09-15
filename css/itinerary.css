@@ -1,0 +1,78 @@
+#itineraryContainer { page-break-before: always; padding-top: 20px; }
+.day-group { margin-bottom: 30px; border: 1px solid var(--color-neutral-200); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); overflow: hidden; background: var(--color-surface); }
+.day-header { background: var(--color-primary-700); color: #fff; padding: 15px; font-weight: bold; font-size: 16px; letter-spacing: 0.3px; }
+.items-list { padding: 10px 15px; }
+
+/* Flex Row 結構 */
+.itinerary-item {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 10px;
+    border-bottom: 1px dotted #ccc;
+    padding-bottom: 10px;
+    position: relative;
+}
+
+.time-col {
+    width: 90px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: flex-start;
+    padding-right: 10px;
+    border-right: 1px dashed var(--color-neutral-200);
+    margin-right: 10px;
+}
+.ipt-time { width: 100%; text-align: center; font-weight: bold; height: var(--input-height); }
+
+.content-col {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 0;
+}
+.item-content {
+    width: 100%; resize: none; min-height: var(--input-height);
+    line-height: 1.6; margin-bottom: 5px;
+}
+
+.btn-del-item {
+    position: absolute; right: 0; top: 0;
+    border: none; background: none; color: var(--color-danger-600);
+    font-weight: bold; cursor: pointer; font-size: 24px;
+    padding: 0 5px; z-index: 10;
+}
+
+/* 功能區 */
+.tools-area { margin-top: 5px; }
+
+.smart-suggestion-area { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; min-height: 0; margin-bottom: 5px; }
+.suggestion-btn { background: var(--color-accent-100); color: var(--color-accent-600); border: 1px solid var(--color-accent-100); padding: 4px 12px; border-radius: var(--radius-full); font-size: var(--font-size-sm); cursor: pointer; display: flex; align-items: center; gap: 5px; transition: 0.2s; white-space: nowrap; }
+.suggestion-btn:hover { background: #d0e7fc; transform: translateY(-1px); }
+
+.link-input-container { display: none; gap: 5px; align-items: center; animation: fadeIn 0.3s; margin-bottom: 5px; }
+.ipt-paste-link { flex: 1; height: 32px; font-size: var(--font-size-sm); border: 1px dashed var(--color-accent-600); background: #fcfcfc; }
+.btn-save-link { height: 32px; background: var(--color-success-600); color: white; border: none; padding: 0 15px; border-radius: var(--radius-sm); cursor: pointer; font-size: var(--font-size-sm); white-space: nowrap; }
+
+.confirmed-link-badge {
+    display: none; align-items: center; gap: 8px;
+    background: #e6f7f0; border: 1px solid var(--color-success-600);
+    padding: 4px 10px; border-radius: var(--radius-sm); width: fit-content;
+    margin-top: 2px;
+}
+.badge-text { font-size: var(--font-size-sm); color: var(--color-success-600); font-weight: bold; }
+.badge-url { font-size: var(--font-size-xs); color: var(--color-neutral-600); text-decoration: underline; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.btn-del-link { background: none; border: none; color: var(--color-danger-600); cursor: pointer; font-weight: bold; margin-left: 5px; }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+.card-editor { display: none; }
+
+.add-act-wrapper { text-align: center; padding: 15px; background: var(--color-neutral-50); border-top: 1px dashed var(--color-neutral-200); }
+.btn-add { background: var(--color-accent-600); color: white; border: none; padding: 12px 30px; border-radius: var(--radius-full); cursor: pointer; font-weight: bold; font-size: var(--font-size-base); }
+.note-area { padding: 12px 15px; background: var(--color-warning-100); border-top: 1px solid var(--color-neutral-200); }
+.note-label { font-weight: bold; color: var(--color-warning-700); font-size: 11pt; display: block; margin-bottom: 5px; }
+.ipt-note { width: 100%; min-height: 40px; line-height: 1.6; resize: vertical; overflow: hidden; background: #fffef0; }
+
+body.preview-mode .ipt-time, body.preview-mode .item-content { border: none !important; background: transparent !important; padding-left: 0; padding-right: 0; }
+body.preview-mode .btn-add, body.preview-mode .add-act-wrapper, body.preview-mode .btn-del-item, body.preview-mode .card-editor, body.preview-mode .tools-area { display: none !important; }
+body.preview-mode .confirmed-link-badge { display: inline-flex; pointer-events: auto; }

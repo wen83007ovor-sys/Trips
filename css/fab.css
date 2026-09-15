@@ -1,0 +1,21 @@
+/* 懸浮按鈕 FAB */
+.fab-container { position: fixed; bottom: calc(20px + env(safe-area-inset-bottom)); right: 20px; z-index: 99999; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; user-select: none; }
+.fab-main { width: 58px; height: 58px; border-radius: 50%; border: none; color: #fff; font-size: 26px; cursor: pointer; box-shadow: var(--shadow-md); display: flex; align-items: center; justify-content: center; transition: transform 0.2s, box-shadow 0.2s; background: var(--color-primary-700); flex-shrink: 0; }
+.fab-main:active { transform: scale(0.92); }
+.fab-menu { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; transition: opacity 0.25s, transform 0.25s; }
+.fab-menu.collapsed { opacity: 0; pointer-events: none; transform: translateY(10px); }
+.fab-row { display: flex; align-items: center; gap: 10px; }
+.fab-label { background: rgba(30,30,30,0.82); color: #fff; font-size: 13px; font-weight: bold; padding: 6px 13px; border-radius: var(--radius-full); white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,0.18); pointer-events: none; }
+.btn { width: 50px; height: 50px; border-radius: 50%; border: none; font-weight: bold; color: #fff; font-size: 20px; cursor: pointer; box-shadow: 0 3px 10px rgba(0,0,0,0.25); display: flex; align-items: center; justify-content: center; transition: transform 0.15s; flex-shrink: 0; }
+.btn:active { transform: scale(0.9); }
+
+/* 編輯模式：build 為主要動作，其餘依語意分色 */
+.btn-edit-gen { background: var(--color-accent-600); }
+.btn-edit-preview { background: var(--color-primary-700); }
+.btn-edit-load { background: var(--color-neutral-600); }
+.btn-edit-save { background: var(--color-success-600); }
+
+/* 預覽模式：PDF/Word 為不同匯出格式，刻意維持視覺區隔 */
+.btn-pre-back { background: var(--color-neutral-600); }
+.btn-pre-pdf { background: var(--color-danger-600); }
+.btn-pre-word { background: var(--color-accent-600); }

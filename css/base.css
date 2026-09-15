@@ -1,0 +1,37 @@
+* { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+body {
+    font-family: var(--font-cjk);
+    background-color: var(--color-neutral-50);
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+}
+body.preview-mode { background-color: #444 !important; }
+
+/* 導覽列 */
+.lang-switch { position: relative; width: 95%; max-width: 210mm; margin: 0 auto; padding: 20px 0; display: flex; justify-content: space-between; align-items: center; z-index: 100; background-color: #fbfafa; }
+.brand-logo { font-size: 24px; font-weight: 900; color: var(--color-primary-700); font-family: 'Arial', sans-serif; letter-spacing: 1px; cursor: default; display: flex; align-items: center; gap: 8px; }
+.lang-switch select { padding: 8px 15px; border-radius: var(--radius-full); border: 1px solid var(--color-neutral-200); font-size: var(--font-size-base); background: var(--color-surface); cursor: pointer; box-shadow: var(--shadow-sm); transition: 0.2s; }
+
+.toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1000000; pointer-events: none; }
+.toast-msg { background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(8px); color: white; padding: 12px 25px; border-radius: var(--radius-full); font-size: var(--font-size-base); font-weight: bold; margin-bottom: 10px; opacity: 0; transform: translateY(-20px); transition: all 0.4s; }
+.toast-msg.show { opacity: 1; transform: translateY(0); }
+
+.container { width: 95%; max-width: 210mm; min-height: 297mm; background: var(--color-surface); padding: 40px; margin: 0 auto 160px auto; box-shadow: var(--shadow-md); position: relative; }
+.company-header input { font-size: 24pt; font-weight: bold; text-align: center; border: none; border-bottom: 2px solid var(--color-neutral-200); width: 100%; color: var(--color-primary-700); background: transparent; margin-bottom: 10px; height: 60px; }
+h1 { text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; font-size: var(--font-size-xl); margin: 10px 0 25px 0; }
+
+.hidden { display: none !important; }
+
+body.preview-mode input, body.preview-mode textarea { pointer-events: none; }
+
+input:focus-visible, textarea:focus-visible, select:focus-visible {
+    outline: 2px solid var(--color-accent-600);
+    outline-offset: 1px;
+}
+
+@media print { .no-print { display: none !important; } }

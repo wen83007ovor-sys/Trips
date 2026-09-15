@@ -1,0 +1,5 @@
+@media (max-width: 600px) {
+    .container { padding: 15px; width: 100%; box-shadow: none; }
+    .form-section { grid-template-columns: 1fr; }
+    .lang-switch { width: 100%; padding: 10px 15px; }
+}
