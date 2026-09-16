@@ -1,6 +1,6 @@
-import { t } from './i18n.js?v=1';
-import { autoHeight, escapeHtml } from './util.js?v=1';
-import { updateCardDisplay } from './links.js?v=1';
+import { t } from './i18n.js?v=20260916000613';
+import { autoHeight, escapeHtml } from './util.js?v=20260916000613';
+import { updateCardDisplay } from './links.js?v=20260916000613';
 
 export function buildItinerary(existingData = null) {
     const days = existingData ? existingData.daysCount : document.getElementById('ipt_days').value;

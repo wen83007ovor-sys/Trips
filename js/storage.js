@@ -1,8 +1,8 @@
-import { STORAGE_KEY, CURRENT_SCHEMA_VERSION } from './config.js?v=1';
-import { getLang, setLang } from './state.js?v=1';
-import { i18n, applyLang } from './i18n.js?v=1';
-import { showToast } from './toast.js?v=1';
-import { buildItinerary } from './itinerary.js?v=1';
+import { STORAGE_KEY, CURRENT_SCHEMA_VERSION } from './config.js?v=20260916000613';
+import { getLang, setLang } from './state.js?v=20260916000613';
+import { i18n, applyLang } from './i18n.js?v=20260916000613';
+import { showToast } from './toast.js?v=20260916000613';
+import { buildItinerary } from './itinerary.js?v=20260916000613';
 
 const LEGACY_KEY_PATTERN = /^trip_v(\d+)_data$/;
 

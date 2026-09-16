@@ -1,4 +1,4 @@
-import { loadScriptOnce, autoHeight } from './util.js?v=1';
+import { loadScriptOnce, autoHeight } from './util.js?v=20260916000613';
 
 const HTML2PDF_URL = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
 

@@ -1,12 +1,12 @@
-import { autoHeight, debounce } from './util.js?v=1';
-import { detectKeywords, saveLink, removeLink, openSearchAndInput, updateCardDisplay } from './links.js?v=1';
-import { buildItinerary, addAct } from './itinerary.js?v=1';
-import { saveData, loadData } from './storage.js?v=1';
-import { downloadPDF } from './export-pdf.js?v=1';
-import { downloadWord } from './export-word.js?v=1';
-import { toggleMode, toggleFab } from './fab.js?v=1';
-import { setLang } from './state.js?v=1';
-import { applyLang } from './i18n.js?v=1';
+import { autoHeight, debounce } from './util.js?v=20260916000613';
+import { detectKeywords, saveLink, removeLink, openSearchAndInput, updateCardDisplay } from './links.js?v=20260916000613';
+import { buildItinerary, addAct } from './itinerary.js?v=20260916000613';
+import { saveData, loadData } from './storage.js?v=20260916000613';
+import { downloadPDF } from './export-pdf.js?v=20260916000613';
+import { downloadWord } from './export-word.js?v=20260916000613';
+import { toggleMode, toggleFab } from './fab.js?v=20260916000613';
+import { setLang } from './state.js?v=20260916000613';
+import { applyLang } from './i18n.js?v=20260916000613';
 
 const debouncedDetectKeywords = debounce(detectKeywords, 280);
 
